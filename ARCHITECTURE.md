@@ -26,18 +26,12 @@ The main agent can call these tools autonomously based on user query:
 - Specialized prompting for go-to-market strategy
 - Attribution modeling, tool stack recommendations, systems thinking
 
-#### c) Deep Research
-- Multi-step research workflow
-- Performs iterative web searches, builds comprehensive report
-- May require user confirmation before executing (expensive operation)
-- Streams progress updates
-
-#### d) Analyze Website
+#### c) Analyze Website
 - Analyzes a given URL for business context
 - Extracts company info, industry, value proposition
 - Stores in `website_contexts` table for future reference
 
-#### e) Database/SQL Analyst (future)
+#### d) Database/SQL Analyst (future)
 - Queries connected integrations (HubSpot, Salesforce)
 - Executes SQL on user's connected databases
 
@@ -200,7 +194,7 @@ The main agent can call these tools autonomously based on user query:
    - Checks rate limits
    - Loads conversation history
    - Calls AI SDK `streamText` with Gemini model
-   - Provides tools: web_search, gtm_expert, deep_research, etc.
+   - Provides tools: web_search, gtm_expert, etc.
 
 3. Gemini decides autonomously:
    - "This needs current info" → calls `web_search` tool

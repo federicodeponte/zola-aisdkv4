@@ -72,10 +72,7 @@ Open [http://localhost:3000](http://localhost:3000)
    - Company info, industry, value proposition
    - Stores in database for future GTM analysis
 
-4. **Deep Research** (`deep_research`)
-   - Multi-step research workflow
-   - Iterative web searches
-   - Comprehensive market reports
+4. **Deep Research** (handled automatically via Gemini native search grounding)
 
 ### Bulk CSV Processing
 
@@ -242,7 +239,7 @@ Required in Vercel:
 **User:** "Research the marketing automation landscape for 2025"
 
 **AI will:**
-1. Use `deep_research` tool
+1. Leverage Gemini native search grounding when deeper research is requested
 2. Perform 3-5 iterative web searches
 3. Compile comprehensive report with citations
 4. Provide trends, leaders, and recommendations

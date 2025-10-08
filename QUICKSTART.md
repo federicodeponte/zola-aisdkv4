@@ -190,7 +190,7 @@ AI: [Uses gtm_expert tool to provide comprehensive GTM framework]
 ### Market Research
 ```
 User: "Research the top CRM platforms and their GTM strategies"
-AI: [Uses web_search + deep_research to compile detailed report]
+AI: [Uses Gemini's native search grounding to compile detailed report]
 ```
 
 ### Lead Enrichment

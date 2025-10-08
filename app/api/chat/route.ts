@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT_DEFAULT } from "@/lib/config"
+import { FEATURE_FLAGS, SYSTEM_PROMPT_DEFAULT } from "@/lib/config"
 import { getAllModels } from "@/lib/models"
 import { getProviderForModel } from "@/lib/openproviders/provider-map"
 import type { ProviderWithoutOllama } from "@/lib/user-keys"
@@ -14,7 +14,7 @@ import { createErrorResponse, extractErrorMessage } from "./utils"
 import { webSearchTool } from "@/lib/tools/web-search"
 import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
 import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
-import { deepResearchTool } from "@/lib/tools/deep-research"
+import { createBulkProcessTool } from "@/lib/tools/bulk-process-tool"
 import { trackTokenUsage } from "@/lib/tools/token-tracking"
 
 export const maxDuration = 60
@@ -54,6 +54,7 @@ export async function POST(req: Request) {
       userId,
       model,
       isAuthenticated,
+      request: req,
     })
 
     // Increment message count for successful validation
@@ -96,19 +97,20 @@ export async function POST(req: Request) {
 
     // Build tools object - only include tools if search is enabled and user is authenticated
     const tools: ToolSet = {}
-    
+
     if (enableSearch && supabase && userId) {
       // Add web search tool
       tools.web_search = webSearchTool
-      
+
       // Add GTM Expert tool
       tools.gtm_expert = createGtmExpertTool(supabase, userId)
-      
+
       // Add website analysis tool
       tools.analyze_website = createAnalyzeWebsiteTool(supabase, userId)
-      
-      // Add deep research tool
-      tools.deep_research = deepResearchTool
+
+      if (FEATURE_FLAGS.HEAVY_TOOLS) {
+        tools.bulk_process = createBulkProcessTool(supabase, userId)
+      }
     }
 
     const result = streamText({

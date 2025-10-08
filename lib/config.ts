@@ -8,6 +8,10 @@ import {
   Sparkle,
 } from "@phosphor-icons/react/dist/ssr"
 
+export const FEATURE_FLAGS = {
+  HEAVY_TOOLS: process.env.NEXT_PUBLIC_HEAVY_TOOLS === "true",
+} as const
+
 export const NON_AUTH_DAILY_MESSAGE_LIMIT = 5
 export const AUTH_DAILY_MESSAGE_LIMIT = 1000
 export const REMAINING_QUERY_ALERT_THRESHOLD = 2

@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
     if (!supabase) {
-      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+      return NextResponse.json({ error: "Supabase not configured" }, { status: 503 })
     }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -47,8 +48,9 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
     if (!supabase) {
-      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+      return NextResponse.json({ error: "Supabase not configured" }, { status: 503 })
     }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -120,8 +122,9 @@ export async function PATCH(req: NextRequest) {
   try {
     const supabase = await createClient()
     if (!supabase) {
-      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+      return NextResponse.json({ error: "Supabase not configured" }, { status: 503 })
     }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -184,8 +187,9 @@ export async function DELETE(req: NextRequest) {
   try {
     const supabase = await createClient()
     if (!supabase) {
-      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+      return NextResponse.json({ error: "Supabase not configured" }, { status: 503 })
     }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()

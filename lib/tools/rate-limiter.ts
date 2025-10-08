@@ -6,8 +6,8 @@ export type UserTier = "BETA" | "FREE" | "STARTER" | "PROFESSIONAL" | "ENTERPRIS
 
 // Get user's tier based on their account
 export function getUserTier(user: {
-  premium?: boolean
-  anonymous?: boolean
+  premium?: boolean | null
+  anonymous?: boolean | null
 }): UserTier {
   if (user.anonymous) return "FREE"
   if (user.premium) return "PROFESSIONAL"
@@ -90,9 +90,13 @@ export async function incrementWebSearchCount(
 ): Promise<void> {
   try {
     // Increment counter
-    const { error } = await supabase.rpc("increment_web_search_count", {
-      user_id: userId,
-    })
+    const { error } = await (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>
+    ) => Promise<{ data: unknown; error: unknown }>) (
+      "increment_web_search_count",
+      { user_id: userId }
+    )
 
     if (error) {
       // If function doesn't exist, do a manual update

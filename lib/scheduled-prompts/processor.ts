@@ -6,7 +6,6 @@ import { trackTokenUsage } from "@/lib/tools/token-tracking"
 import { webSearchTool } from "@/lib/tools/web-search"
 import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
 import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
-import { deepResearchTool } from "@/lib/tools/deep-research"
 
 export interface ScheduledPrompt {
   id: string
@@ -50,7 +49,6 @@ export async function executeScheduledPrompt(
       web_search: webSearchTool,
       gtm_expert: createGtmExpertTool(supabase, prompt.user_id),
       analyze_website: createAnalyzeWebsiteTool(supabase, prompt.user_id),
-      deep_research: deepResearchTool,
     }
 
     // Execute prompt with AI

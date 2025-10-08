@@ -1,15 +1,5 @@
-import Exa from "exa-js"
 import { tool } from "ai"
 import { z } from "zod"
-
-// Initialize Exa client (optional - gracefully degrades if not available)
-const getExaClient = () => {
-  const apiKey = process.env.EXA_API_KEY
-  if (!apiKey) {
-    return null
-  }
-  return new Exa(apiKey)
-}
 
 export const webSearchTool = tool({
   description: `Search the web for current information, news, articles, and data. 
@@ -29,71 +19,11 @@ export const webSearchTool = tool({
   }),
   execute: async ({ query, numResults = 5, category }) => {
     try {
-      const exa = getExaClient()
-      
-      // If Exa is not configured, return a helpful message
-      if (!exa) {
-        return {
-          success: false,
-          message: "Web search is not configured. Using Gemini's built-in knowledge instead. To enable real-time web search, add EXA_API_KEY to environment variables.",
-          results: [],
-        }
-      }
-
-      // Perform search with Exa
-      const searchOptions: any = {
-        numResults: Math.min(Math.max(numResults, 1), 10),
-        useAutoprompt: true, // Exa will optimize the query
-        contents: {
-          text: { maxCharacters: 1000 }, // Get text excerpts
-        },
-      }
-
-      if (category) {
-        searchOptions.category = category
-      }
-
-      const results = await exa.searchAndContents(query, searchOptions)
-
-      if (!results.results || results.results.length === 0) {
-        return {
-          success: false,
-          message: "No results found for the query.",
-          results: [],
-        }
-      }
-
-      // Format results with citations
-      const formattedResults = results.results.map((result: any, index: number) => ({
-        id: result.id,
-        title: result.title,
-        url: result.url,
-        excerpt: result.text || "No excerpt available",
-        publishedDate: result.publishedDate,
-        author: result.author,
-        score: result.score,
-        citation: `[${index + 1}]`,
-      }))
-
-      // Create a summary for the assistant
-      const summary = formattedResults
-        .map(
-          (r: any, i: number) =>
-            `${r.citation} ${r.title}\n${r.excerpt}\nSource: ${r.url}\n`
-        )
-        .join("\n")
-
       return {
-        success: true,
-        query,
-        numResults: formattedResults.length,
-        results: formattedResults,
-        summary,
-        citations: formattedResults.map((r: any) => ({
-          number: r.citation,
-          title: r.title,
-          url: r.url,
-        })),
+        success: false,
+        message:
+          "Gemini native search grounding handles real-time web lookups. Trigger it by asking the model for up-to-date information.",
+        results: [],
       }
     } catch (error: any) {
       console.error("Web search error:", error)

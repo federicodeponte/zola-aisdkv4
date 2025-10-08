@@ -90,7 +90,6 @@ if (enableSearch && supabase && userId) {
   tools.web_search = webSearchTool
   tools.gtm_expert = createGtmExpertTool(supabase, userId)
   tools.analyze_website = createAnalyzeWebsiteTool(supabase, userId)
-  tools.deep_research = deepResearchTool
 }
 
 // Pass tools to AI (line 80)

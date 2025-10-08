@@ -1,5 +1,5 @@
-import { SupabaseClient } from "@supabase/supabase-js"
-import { Database } from "@/app/types/database.types"
+import type { Database } from "@/app/types/database.types"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
 // Model pricing per 1M tokens (input/output)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {

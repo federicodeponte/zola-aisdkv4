@@ -66,3 +66,4 @@ check-*.sql
 rebuild-*.sql
 rebuild-*.sh
 rebuild-*.js
+.env*.local

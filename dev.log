@@ -1,0 +1,24 @@
+
+> zola@0.1.0 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use, using available port 3007 instead.
+   ▲ Next.js 15.4.0-canary.75 (Turbopack)
+   - Local:        http://localhost:3007
+   - Network:      http://10.23.0.20:3007
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ nodeMiddleware
+
+ ✓ Starting...
+ ✓ Compiled middleware in 184ms
+ ✓ Ready in 996ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbopack
+
+   Reload env: .env.local
+ ✓ Compiled middleware in 248ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled middleware in 242ms
+ ✓ Compiled middleware in 8ms

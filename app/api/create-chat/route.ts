@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       model,
       isAuthenticated,
       projectId,
+      request,
     })
 
     if (!chat) {

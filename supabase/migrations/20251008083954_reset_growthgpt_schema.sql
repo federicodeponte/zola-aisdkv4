@@ -239,7 +239,7 @@ CREATE TABLE token_usage (
   completion_tokens INTEGER NOT NULL DEFAULT 0,
   total_tokens INTEGER NOT NULL DEFAULT 0,
   cost_usd DECIMAL(10, 6) DEFAULT 0,
-  action_type TEXT,
+  action_type TEXT, -- 'message', 'web_search', 'bulk_process'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -397,6 +397,7 @@ CREATE TRIGGER on_auth_user_created
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO supabase_admin;
+
 
 
 

@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const usage = await getMessageUsage(userId, isAuthenticated)
+    const usage = await getMessageUsage(userId, isAuthenticated, req)
 
     if (!usage) {
       return new Response(

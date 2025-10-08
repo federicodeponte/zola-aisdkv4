@@ -7,12 +7,13 @@ import { validateUserIdentity } from "@/lib/server/api"
 
 export async function getMessageUsage(
   userId: string,
-  isAuthenticated: boolean
+  isAuthenticated: boolean,
+  request?: Request
 ) {
-  const supabase = await validateUserIdentity(userId, isAuthenticated)
+  const supabase = await validateUserIdentity(userId, isAuthenticated, request)
   if (!supabase) return null
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("users")
     .select("daily_message_count, daily_pro_message_count")
     .eq("id", userId)

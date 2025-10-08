@@ -16,8 +16,9 @@ export async function validateAndTrackUsage({
   userId,
   model,
   isAuthenticated,
+  request,
 }: ChatApiParams): Promise<SupabaseClientType | null> {
-  const supabase = await validateUserIdentity(userId, isAuthenticated)
+  const supabase = await validateUserIdentity(userId, isAuthenticated, request)
   if (!supabase) return null
 
   // Check if user is authenticated
@@ -48,7 +49,7 @@ export async function validateAndTrackUsage({
   }
 
   // Check usage limits for the model
-  await checkUsageByModel(supabase, userId, model, isAuthenticated)
+  await checkUsageByModel(supabase as any, userId, model, isAuthenticated)
 
   return supabase
 }
@@ -63,7 +64,7 @@ export async function incrementMessageCount({
   if (!supabase) return
 
   try {
-    await incrementUsage(supabase, userId)
+    await incrementUsage(supabase as any, userId)
   } catch (err) {
     console.error("Failed to increment message count:", err)
     // Don't throw error as this shouldn't block the chat
@@ -82,7 +83,7 @@ export async function logUserMessage({
 }: LogUserMessageParams): Promise<void> {
   if (!supabase) return
 
-  const { error } = await supabase.from("messages").insert({
+  const { error } = await (supabase as any).from("messages").insert({
     chat_id: chatId,
     role: "user",
     content: sanitizeUserInput(content),

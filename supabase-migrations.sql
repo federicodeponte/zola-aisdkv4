@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS token_usage (
   completion_tokens INTEGER NOT NULL DEFAULT 0,
   total_tokens INTEGER NOT NULL DEFAULT 0,
   cost_usd DECIMAL(10, 6) DEFAULT 0,
-  action_type TEXT, -- 'message', 'web_search', 'bulk_process', 'deep_research'
+  action_type TEXT, -- 'message', 'web_search', 'bulk_process'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

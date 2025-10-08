@@ -5,7 +5,9 @@ import {
   FREE_MODELS_IDS,
   NON_AUTH_DAILY_MESSAGE_LIMIT,
 } from "@/lib/config"
-import { SupabaseClient } from "@supabase/supabase-js"
+import type { SupabaseClient as SupabaseClientBase } from "@supabase/supabase-js"
+
+type SupabaseClient = SupabaseClientBase<any, any, any>
 
 const isFreeModel = (modelId: string) => FREE_MODELS_IDS.includes(modelId)
 const isProModel = (modelId: string) => !isFreeModel(modelId)

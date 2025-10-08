@@ -40,9 +40,11 @@ export async function POST(req: NextRequest) {
     if (!parsedData && csvString) {
       try {
         parsedData = parseCSV(csvString)
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error occurred"
         return NextResponse.json(
-          { error: `CSV parsing failed: ${error.message}` },
+          { error: `CSV parsing failed: ${message}` },
           { status: 400 }
         )
       }
@@ -104,10 +106,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Bulk process error:", error)
+    const message = error instanceof Error ? error.message : "Bulk processing failed"
     return NextResponse.json(
-      { error: error.message || "Bulk processing failed" },
+      { error: message },
       { status: 500 }
     )
   }

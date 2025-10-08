@@ -1,5 +1,7 @@
 "use client"
 
+import { FEATURE_FLAGS } from "@/lib/config"
+import { HeavyToolRenderer } from "./heavy-tools/heavy-tool-renderer"
 import { cn } from "@/lib/utils"
 import type { ToolInvocationUIPart } from "@ai-sdk/ui-utils"
 import {
@@ -206,6 +208,13 @@ function SingleToolCard({
   defaultOpen?: boolean
   className?: string
 }) {
+  if (
+    FEATURE_FLAGS.HEAVY_TOOLS &&
+    toolData.toolInvocation.toolName === "bulk_process"
+  ) {
+    return <HeavyToolRenderer toolData={toolData} />
+  }
+
   const [isExpanded, setIsExpanded] = useState(defaultOpen)
   const { toolInvocation } = toolData
   const { state, toolName, toolCallId, args } = toolInvocation
