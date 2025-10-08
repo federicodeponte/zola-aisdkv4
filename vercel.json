@@ -1,0 +1,10 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/process-scheduled-prompts",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
+
+

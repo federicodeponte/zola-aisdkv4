@@ -52,3 +52,17 @@ bun.lockb
 bun.lock
 
 /.cursor
+
+# GrowthGPT Test Files
+test-*.js
+test-*.sh
+test-*.log
+*.test.js
+.playwright-mcp/
+
+# SQL debug files
+diagnose-*.sql
+check-*.sql
+rebuild-*.sql
+rebuild-*.sh
+rebuild-*.js

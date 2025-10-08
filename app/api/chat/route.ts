@@ -11,6 +11,11 @@ import {
   validateAndTrackUsage,
 } from "./api"
 import { createErrorResponse, extractErrorMessage } from "./utils"
+import { webSearchTool } from "@/lib/tools/web-search"
+import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
+import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
+import { deepResearchTool } from "@/lib/tools/deep-research"
+import { trackTokenUsage } from "@/lib/tools/token-tracking"
 
 export const maxDuration = 60
 
@@ -89,19 +94,37 @@ export async function POST(req: Request) {
         undefined
     }
 
+    // Build tools object - only include tools if search is enabled and user is authenticated
+    const tools: ToolSet = {}
+    
+    if (enableSearch && supabase && userId) {
+      // Add web search tool
+      tools.web_search = webSearchTool
+      
+      // Add GTM Expert tool
+      tools.gtm_expert = createGtmExpertTool(supabase, userId)
+      
+      // Add website analysis tool
+      tools.analyze_website = createAnalyzeWebsiteTool(supabase, userId)
+      
+      // Add deep research tool
+      tools.deep_research = deepResearchTool
+    }
+
     const result = streamText({
       model: modelConfig.apiSdk(apiKey, { enableSearch }),
       system: effectiveSystemPrompt,
       messages: messages,
-      tools: {} as ToolSet,
+      tools,
       maxSteps: 10,
       onError: (err: unknown) => {
         console.error("Streaming error occurred:", err)
         // Don't set streamError anymore - let the AI SDK handle it through the stream
       },
 
-      onFinish: async ({ response }) => {
+      onFinish: async ({ response, usage }) => {
         if (supabase) {
+          // Store assistant message
           await storeAssistantMessage({
             supabase,
             chatId,
@@ -110,6 +133,18 @@ export async function POST(req: Request) {
             message_group_id,
             model,
           })
+
+          // Track token usage
+          if (usage) {
+            await trackTokenUsage(supabase, {
+              userId,
+              chatId,
+              model,
+              promptTokens: usage.promptTokens,
+              completionTokens: usage.completionTokens,
+              actionType: "message",
+            })
+          }
         }
       },
     })

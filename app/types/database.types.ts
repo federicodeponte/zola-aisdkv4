@@ -11,6 +11,160 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      token_usage: {
+        Row: {
+          id: number
+          user_id: string
+          chat_id: string | null
+          model: string
+          prompt_tokens: number
+          completion_tokens: number
+          total_tokens: number
+          cost_usd: number
+          action_type: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          chat_id?: string | null
+          model: string
+          prompt_tokens?: number
+          completion_tokens?: number
+          total_tokens?: number
+          cost_usd?: number
+          action_type?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          chat_id?: string | null
+          model?: string
+          prompt_tokens?: number
+          completion_tokens?: number
+          total_tokens?: number
+          cost_usd?: number
+          action_type?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_usage_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_contexts: {
+        Row: {
+          id: string
+          user_id: string
+          domain: string
+          company_name: string | null
+          industry: string | null
+          value_proposition: string | null
+          analysis: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          domain: string
+          company_name?: string | null
+          industry?: string | null
+          value_proposition?: string | null
+          analysis?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          domain?: string
+          company_name?: string | null
+          industry?: string | null
+          value_proposition?: string | null
+          analysis?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_contexts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_prompts: {
+        Row: {
+          id: string
+          user_id: string
+          prompt: string
+          schedule_type: string
+          schedule_time: string | null
+          schedule_date: string | null
+          delivery_method: string
+          delivery_config: Json | null
+          is_active: boolean
+          last_run_at: string | null
+          next_run_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          prompt: string
+          schedule_type: string
+          schedule_time?: string | null
+          schedule_date?: string | null
+          delivery_method?: string
+          delivery_config?: Json | null
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          prompt?: string
+          schedule_type?: string
+          schedule_time?: string | null
+          schedule_date?: string | null
+          delivery_method?: string
+          delivery_config?: Json | null
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_prompts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           id: string
@@ -206,6 +360,8 @@ export type Database = {
           daily_pro_message_count: number | null
           daily_pro_reset: string | null
           system_prompt: string | null
+          web_searches_today: number | null
+          web_search_reset: string | null
         }
         Insert: {
           anonymous?: boolean | null
@@ -223,6 +379,8 @@ export type Database = {
           daily_pro_message_count?: number | null
           daily_pro_reset?: string | null
           system_prompt?: string | null
+          web_searches_today?: number | null
+          web_search_reset?: string | null
         }
         Update: {
           anonymous?: boolean | null
@@ -240,6 +398,8 @@ export type Database = {
           daily_pro_message_count?: number | null
           daily_pro_reset?: string | null
           system_prompt?: string | null
+          web_searches_today?: number | null
+          web_search_reset?: string | null
         }
         Relationships: []
       }

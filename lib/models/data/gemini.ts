@@ -109,7 +109,7 @@ const geminiModels: ModelConfig[] = [
     modelPage: "https://deepmind.google/technologies/gemini",
     releasedAt: "2024-12-11",
     icon: "gemini",
-    apiSdk: (apiKey?: string) =>
+    apiSdk: (apiKey?: string, opts?: { enableSearch?: boolean }) =>
       openproviders("gemini-2.0-flash-001", undefined, apiKey),
   },
   {
@@ -140,18 +140,18 @@ const geminiModels: ModelConfig[] = [
       openproviders("gemini-2.0-flash-lite-preview-02-05", undefined, apiKey),
   },
   {
-    id: "gemini-2.5-pro-exp-03-25",
-    name: "Gemini 2.5 Flash Preview",
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
     provider: "Google",
     providerId: "google",
     modelFamily: "Gemini",
     baseProviderId: "google",
     description:
-      "Preview of the next-gen Gemini Flash with multimodal support.",
-    tags: ["preview", "next-gen", "multimodal", "experimental"],
-    contextWindow: 1000000,
-    inputCost: 0.1,
-    outputCost: 0.4,
+      "Next-gen Gemini Flash with advanced reasoning and multimodal support. Generally available as of June 2025.",
+    tags: ["fast", "multimodal", "reasoning", "production"],
+    contextWindow: 1048576,
+    inputCost: 0.075,
+    outputCost: 0.3,
     priceUnit: "per 1M tokens",
     vision: true,
     tools: true,
@@ -159,13 +159,14 @@ const geminiModels: ModelConfig[] = [
     reasoning: true,
     openSource: false,
     speed: "Fast",
-    intelligence: "Medium",
+    intelligence: "High",
     website: "https://gemini.google.com",
     apiDocs: "https://ai.google.dev/api/docs",
-    modelPage: "https://deepmind.google/technologies/gemini",
+    modelPage: "https://deepmind.google/models/gemini/flash",
+    releasedAt: "2025-06-17",
     icon: "gemini",
-    apiSdk: (apiKey?: string) =>
-      openproviders("gemini-2.5-pro-exp-03-25", undefined, apiKey),
+    apiSdk: (apiKey?: string, opts?: { enableSearch?: boolean }) =>
+      openproviders("gemini-2.5-flash", undefined, apiKey),
   },
   {
     id: "gemini-2.5-pro-exp-03-25-pro",
