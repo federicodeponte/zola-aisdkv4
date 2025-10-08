@@ -125,7 +125,16 @@ export function useChatCore({
   const submit = useCallback(async () => {
     setIsSubmitting(true)
 
-    const uid = await getOrCreateGuestUserId(user)
+    let uid: string | null = null
+    try {
+      uid = await getOrCreateGuestUserId(user)
+    } catch (err) {
+      console.error("Failed to create or fetch guest user:", err)
+      toast({ title: "Unable to start chat. Please try again.", status: "error" })
+      setIsSubmitting(false)
+      return
+    }
+
     if (!uid) {
       setIsSubmitting(false)
       return
