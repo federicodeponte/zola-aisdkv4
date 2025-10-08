@@ -1,11 +1,7 @@
--- ⚠️ DANGER: This will DELETE ALL DATA and create a fresh schema
--- Complete Zola + GrowthGPT Schema from Scratch
--- Only run this if you want to start completely fresh!
+-- Reset GrowthGPT schema from scratch
+\echo '🚨 WARNING: This migration will drop and recreate all GrowthGPT tables.'
 
--- =============================================================================
--- STEP 1: DROP ALL EXISTING TABLES
--- =============================================================================
-
+-- Drop tables (if they exist)
 DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
 DROP TABLE IF EXISTS user_keys CASCADE;
@@ -18,18 +14,15 @@ DROP TABLE IF EXISTS messages CASCADE;
 DROP TABLE IF EXISTS chats CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
--- Drop functions if they exist
+-- Drop functions
 DROP FUNCTION IF EXISTS increment_web_search_count(UUID);
 DROP FUNCTION IF EXISTS reset_daily_web_searches();
 DROP FUNCTION IF EXISTS update_scheduled_prompt_next_run();
 
--- =============================================================================
--- STEP 2: CREATE USERS TABLE (Zola + GrowthGPT)
--- =============================================================================
-
+-- USERS TABLE
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT,  -- Nullable for anonymous users
+  email TEXT,
   anonymous BOOLEAN DEFAULT false,
   message_count INTEGER DEFAULT 0,
   premium BOOLEAN DEFAULT false,
@@ -48,13 +41,10 @@ CREATE TABLE users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create unique index on email for non-anonymous users only
 CREATE UNIQUE INDEX idx_users_email ON users(email) WHERE email IS NOT NULL;
 
--- Enable RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for users
 CREATE POLICY "Users can view their own data"
   ON users FOR SELECT
   USING (auth.uid() = id);
@@ -63,28 +53,7 @@ CREATE POLICY "Users can update their own data"
   ON users FOR UPDATE
   USING (auth.uid() = id);
 
-CREATE POLICY "Users can insert their own row"
-  ON users FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Service role can insert users"
-  ON users FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
-CREATE POLICY "Service role can insert chats"
-  ON chats FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 3: CREATE CHATS TABLE
--- =============================================================================
-
+-- CHATS TABLE
 CREATE TABLE chats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -111,32 +80,15 @@ CREATE POLICY "Users can insert their own chats"
   ON chats FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert chats"
-  ON chats FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
 CREATE POLICY "Users can update their own chats"
   ON chats FOR UPDATE
   USING (auth.uid() = user_id);
-
-CREATE POLICY "Service role can update chats"
-  ON chats FOR UPDATE
-  USING (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
 
 CREATE POLICY "Users can delete their own chats"
   ON chats FOR DELETE
   USING (auth.uid() = user_id);
 
--- =============================================================================
--- STEP 4: CREATE MESSAGES TABLE
--- =============================================================================
-
+-- MESSAGES TABLE
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
@@ -174,17 +126,7 @@ CREATE POLICY "Users can insert messages in their chats"
     )
   );
 
-CREATE POLICY "Service role can insert messages"
-  ON messages FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 5: CREATE PROJECTS TABLE (Zola workspaces)
--- =============================================================================
-
+-- PROJECTS TABLE
 CREATE TABLE projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -212,17 +154,7 @@ CREATE POLICY "Users can delete their own projects"
   ON projects FOR DELETE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert projects"
-  ON projects FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 6: CREATE CHAT_ATTACHMENTS TABLE
--- =============================================================================
-
+-- CHAT_ATTACHMENTS TABLE
 CREATE TABLE chat_attachments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
@@ -247,10 +179,7 @@ CREATE POLICY "Users can insert their own attachments"
   ON chat_attachments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- =============================================================================
--- STEP 7: CREATE USER_KEYS TABLE (BYOK)
--- =============================================================================
-
+-- USER_KEYS TABLE
 CREATE TABLE user_keys (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   provider TEXT NOT NULL,
@@ -267,17 +196,7 @@ CREATE POLICY "Users can manage their own API keys"
   ON user_keys FOR ALL
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert user keys"
-  ON user_keys FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 8: CREATE USER_PREFERENCES TABLE
--- =============================================================================
-
+-- USER_PREFERENCES TABLE
 CREATE TABLE user_preferences (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   layout TEXT,
@@ -296,17 +215,7 @@ CREATE POLICY "Users can manage their own preferences"
   ON user_preferences FOR ALL
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert user preferences"
-  ON user_preferences FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 9: CREATE FEEDBACK TABLE
--- =============================================================================
-
+-- FEEDBACK TABLE
 CREATE TABLE feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -320,18 +229,7 @@ CREATE POLICY "Users can submit feedback"
   ON feedback FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert feedback"
-  ON feedback FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 10: CREATE GROWTHGPT TABLES
--- =============================================================================
-
--- Token usage tracking
+-- TOKEN USAGE TABLE
 CREATE TABLE token_usage (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -354,14 +252,7 @@ CREATE POLICY "Users can view their own token usage"
   ON token_usage FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert token usage"
-  ON token_usage FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- Website contexts for GTM analysis
+-- WEBSITE CONTEXTS TABLE
 CREATE TABLE website_contexts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -384,14 +275,7 @@ CREATE POLICY "Users can manage their own website contexts"
   ON website_contexts FOR ALL
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert website contexts"
-  ON website_contexts FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- Scheduled prompts
+-- SCHEDULED PROMPTS TABLE
 CREATE TABLE scheduled_prompts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -417,18 +301,7 @@ CREATE POLICY "Users can manage their own scheduled prompts"
   ON scheduled_prompts FOR ALL
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role can insert scheduled prompts"
-  ON scheduled_prompts FOR INSERT
-  WITH CHECK (
-    auth.role() = 'supabase_auth_admin' OR
-    auth.role() = 'service_role'
-  );
-
--- =============================================================================
--- STEP 11: CREATE HELPER FUNCTIONS
--- =============================================================================
-
--- Increment web search count
+-- Helper functions
 CREATE OR REPLACE FUNCTION increment_web_search_count(user_id UUID)
 RETURNS void AS $$
 BEGIN
@@ -438,7 +311,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Reset daily web searches
 CREATE OR REPLACE FUNCTION reset_daily_web_searches()
 RETURNS void AS $$
 BEGIN
@@ -449,7 +321,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Update scheduled prompt next run time
 CREATE OR REPLACE FUNCTION update_scheduled_prompt_next_run()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -479,32 +350,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger for scheduled prompts
 CREATE TRIGGER trigger_update_scheduled_prompt_next_run
   BEFORE INSERT OR UPDATE ON scheduled_prompts
   FOR EACH ROW
   EXECUTE FUNCTION update_scheduled_prompt_next_run();
 
--- =============================================================================
--- VERIFICATION
--- =============================================================================
+-- Auth trigger to insert into public.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
 
--- Show all tables created
-SELECT 
-  '🎉 FRESH SCHEMA CREATED!' as status,
-  table_name
-FROM information_schema.tables
-WHERE table_schema = 'public'
-  AND table_type = 'BASE TABLE'
-ORDER BY table_name;
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (
+    id,
+    email,
+    anonymous,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.is_anonymous, false),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO NOTHING;
 
--- Show users table structure
-SELECT 
-  '=== USERS TABLE COLUMNS ===' as info,
-  column_name,
-  data_type,
-  is_nullable
-FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'users'
-ORDER BY ordinal_position;
+  RETURN NEW;
+EXCEPTION
+  WHEN unique_violation THEN
+    RETURN NEW;
+  WHEN OTHERS THEN
+    RAISE WARNING 'Error creating public.users record: %', SQLERRM;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Grant execute permissions
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO supabase_admin;
+
+
+
 

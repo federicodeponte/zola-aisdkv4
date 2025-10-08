@@ -17,6 +17,13 @@ export const maxDuration = 300 // 5 minutes for bulk processing
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase is not configured" },
+        { status: 500 }
+      )
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()

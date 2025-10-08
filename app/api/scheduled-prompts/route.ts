@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { validateSchedule } from "@/lib/scheduled-prompts/processor"
 
 export const dynamic = "force-dynamic"
@@ -8,6 +8,9 @@ export const dynamic = "force-dynamic"
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
+    if (!supabase) {
+      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+    }
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -43,6 +46,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
+    if (!supabase) {
+      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+    }
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -113,6 +119,9 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const supabase = await createClient()
+    if (!supabase) {
+      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+    }
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -174,6 +183,9 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const supabase = await createClient()
+    if (!supabase) {
+      return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+    }
     const {
       data: { user },
     } = await supabase.auth.getUser()
