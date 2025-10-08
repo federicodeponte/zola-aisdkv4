@@ -15,7 +15,12 @@ const ToolParamsSchema = z.object({
   csvUrl: z
     .string()
     .url()
+    .optional()
     .describe("Public URL of the CSV to process."),
+  csvContent: z
+    .string()
+    .optional()
+    .describe("Direct CSV content as a string."),
   promptTemplate: z
     .string()
     .min(1)
@@ -33,7 +38,7 @@ export const createBulkProcessTool = (
     description:
       "Generate and execute a bulk processing plan against a CSV file. Produces a plan with validation, sample prompts, and execution estimates.",
     parameters: ToolParamsSchema,
-    execute: async ({ stage, csvUrl, promptTemplate, model, mode, refinements }) => {
+    execute: async ({ stage, csvUrl, csvContent, promptTemplate, model, mode, refinements }) => {
       if (!FEATURE_FLAGS.HEAVY_TOOLS) {
         const disabledStage: ErrorStage = {
           type: "error",
@@ -48,8 +53,17 @@ export const createBulkProcessTool = (
 
       if (stage === "plan") {
         try {
-          const csvContent = await fetchCsvContent(csvUrl)
-          const csvData = parseCSV(csvContent)
+          // Get CSV content either from URL or direct content
+          let csv: string
+          if (csvContent) {
+            csv = csvContent
+          } else if (csvUrl) {
+            csv = await fetchCsvContent(csvUrl)
+          } else {
+            throw new Error("Either csvUrl or csvContent must be provided")
+          }
+          
+          const csvData = parseCSV(csv)
 
           if (!csvData.length) {
             const errorStage: ErrorStage = {

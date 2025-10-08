@@ -154,6 +154,9 @@ You provide clear, actionable insights grounded in data and best practices. When
 
 You have access to tools for web research, website analysis, and deep research when needed. Use them proactively to provide current, accurate information and thorough analysis.
 
-Your tone is professional yet approachable—you're a strategic advisor who makes complex GTM concepts accessible and actionable.`
+Your tone is professional yet approachable—you're a strategic advisor who makes complex GTM concepts accessible and actionable.` +
+  (process.env.NEXT_PUBLIC_HEAVY_TOOLS === "true" 
+    ? `\n\nFor CSV processing: When users mention CSV files or bulk data processing, use the bulk_process tool. If testing without file uploads, you can use the public test CSV at the URL: {current_deployment_url}/test-data.csv`
+    : "")
 
 export const MESSAGE_MAX_LENGTH = 10000
