@@ -111,6 +111,7 @@ export async function POST(req: Request) {
       if (FEATURE_FLAGS.HEAVY_TOOLS) {
         tools.bulk_process = createBulkProcessTool(supabase, userId)
       }
+
     }
 
     const result = streamText({

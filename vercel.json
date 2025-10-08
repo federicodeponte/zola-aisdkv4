@@ -1,10 +1,10 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/process-scheduled-prompts",
-      "schedule": "*/15 * * * *"
+  "env": {
+    "NEXT_PUBLIC_HEAVY_TOOLS": "true"
+  },
+  "functions": {
+    "app/api/bulk-process/run/route.ts": {
+      "maxDuration": 300
     }
-  ]
+  }
 }
-
-

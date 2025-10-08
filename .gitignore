@@ -44,6 +44,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# test files
+test-bulk-processing.csv
+HEAVY_TOOLS_TEST_GUIDE.md
+plan.md
+
 # env
 .env
 

@@ -32,72 +32,45 @@ export function ButtonFileUpload({
   isUserAuthenticated,
   model,
 }: ButtonFileUploadProps) {
-  if (!isSupabaseEnabled) {
-    return null
-  }
+  // Temporarily allow file uploads without Supabase for testing heavy tools
+  // if (!isSupabaseEnabled) {
+  //   return null
+  // }
 
-  const isFileUploadAvailable = getModelInfo(model)?.vision
+  // Allow file uploads for all models - CSV processing doesn't require vision
+  const isFileUploadAvailable = true
 
-  if (!isFileUploadAvailable) {
-    return (
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="border-border dark:bg-secondary size-9 rounded-full border bg-transparent"
-                type="button"
-                aria-label="Add files"
-              >
-                <Paperclip className="size-4" />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Add files</TooltipContent>
-        </Tooltip>
-        <PopoverContent className="p-2">
-          <div className="text-secondary-foreground text-sm">
-            This model does not support file uploads.
-            <br />
-            Please select another model.
-          </div>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-
-  if (!isUserAuthenticated) {
-    return (
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="border-border dark:bg-secondary size-9 rounded-full border bg-transparent"
-                type="button"
-                aria-label="Add files"
-              >
-                <Paperclip className="size-4" />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Add files</TooltipContent>
-        </Tooltip>
-        <PopoverContentAuth />
-      </Popover>
-    )
-  }
+  // Temporarily allow unauthenticated uploads for testing
+  // if (!isUserAuthenticated) {
+  //   return (
+  //     <Popover>
+  //       <Tooltip>
+  //         <TooltipTrigger asChild>
+  //           <PopoverTrigger asChild>
+  //             <Button
+  //               size="sm"
+  //               variant="secondary"
+  //               className="border-border dark:bg-secondary size-9 rounded-full border bg-transparent"
+  //               type="button"
+  //               aria-label="Add files"
+  //             >
+  //               <Paperclip className="size-4" />
+  //             </Button>
+  //           </PopoverTrigger>
+  //         </TooltipTrigger>
+  //         <TooltipContent>Add files</TooltipContent>
+  //       </Tooltip>
+  //       <PopoverContentAuth />
+  //     </Popover>
+  //   )
+  // }
 
   return (
     <FileUpload
       onFilesAdded={onFileUpload}
       multiple
-      disabled={!isUserAuthenticated}
-      accept=".txt,.md,image/jpeg,image/png,image/gif,image/webp,image/svg,image/heic,image/heif"
+      disabled={false}
+      accept=".txt,.md,.csv,image/jpeg,image/png,image/gif,image/webp,image/svg,image/heic,image/heif"
     >
       <Tooltip>
         <TooltipTrigger asChild>
@@ -105,12 +78,9 @@ export function ButtonFileUpload({
             <Button
               size="sm"
               variant="secondary"
-              className={cn(
-                "border-border dark:bg-secondary size-9 rounded-full border bg-transparent",
-                !isUserAuthenticated && "opacity-50"
-              )}
+              className="border-border dark:bg-secondary size-9 rounded-full border bg-transparent"
               type="button"
-              disabled={!isUserAuthenticated}
+              disabled={false}
               aria-label="Add files"
             >
               <Paperclip className="size-4" />

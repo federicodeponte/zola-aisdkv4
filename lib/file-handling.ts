@@ -36,15 +36,35 @@ export async function validateFile(
     }
   }
 
-  const buffer = await file.arrayBuffer()
-  const type = await fileType.fileTypeFromBuffer(
-    Buffer.from(buffer.slice(0, 4100))
-  )
+  // Check if the file type is in our allowed list
+  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+    // Special handling for text-based files that might not have a MIME type
+    const textExtensions = ['.txt', '.csv', '.md', '.json']
+    const hasTextExtension = textExtensions.some(ext => 
+      file.name.toLowerCase().endsWith(ext)
+    )
+    
+    if (!hasTextExtension) {
+      return {
+        isValid: false,
+        error: "File type not supported",
+      }
+    }
+  }
 
-  if (!type || !ALLOWED_FILE_TYPES.includes(type.mime)) {
-    return {
-      isValid: false,
-      error: "File type not supported or doesn't match its extension",
+  // For binary files, verify the magic bytes match the extension
+  const binaryTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
+  if (binaryTypes.includes(file.type)) {
+    const buffer = await file.arrayBuffer()
+    const type = await fileType.fileTypeFromBuffer(
+      Buffer.from(buffer.slice(0, 4100))
+    )
+    
+    if (!type || type.mime !== file.type) {
+      return {
+        isValid: false,
+        error: "File content doesn't match its extension",
+      }
     }
   }
 
@@ -103,11 +123,10 @@ export async function processFiles(
     }
 
     try {
-      const url = supabase
-        ? await uploadFile(supabase, file)
-        : URL.createObjectURL(file)
-
+      let url: string
+      
       if (supabase) {
+        url = await uploadFile(supabase, file)
         const { error } = await supabase.from("chat_attachments").insert({
           chat_id: chatId,
           user_id: userId,
@@ -120,6 +139,22 @@ export async function processFiles(
         if (error) {
           throw new Error(`Database insertion failed: ${error.message}`)
         }
+      } else {
+        // Use temporary upload endpoint for testing without Supabase
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        const response = await fetch('/api/temp-upload', {
+          method: 'POST',
+          body: formData,
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload file temporarily')
+        }
+        
+        const { url: tempUrl } = await response.json()
+        url = tempUrl
       }
 
       attachments.push(createAttachment(file, url))

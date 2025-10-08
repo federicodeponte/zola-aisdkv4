@@ -100,16 +100,23 @@ export function HeavyToolContainer({ toolData }: HeavyToolContainerProps) {
               endpoint?: string
               action?: string
               mode?: string
+              csvString?: string
+              promptTemplate?: string
+              model?: string
+              chatId?: string
             }
           }
         | undefined
 
       const endpoint = execution?.payload?.endpoint ?? "/api/bulk-process/run"
+      const csvString = (planMetadata.csvString as string) || ""
 
       const payload = {
-        action: execution?.payload?.action ?? "execute",
+        csvString,
+        promptTemplate: execution?.payload?.promptTemplate,
+        model: execution?.payload?.model,
+        chatId: toolData.toolInvocation.toolCallId,
         mode,
-        ...execution?.payload,
       }
 
       try {
@@ -126,23 +133,86 @@ export function HeavyToolContainer({ toolData }: HeavyToolContainerProps) {
           throw new Error(`Execution failed (${response.status})`)
         }
 
-        const data = await response.json()
+        if (!response.body) {
+          throw new Error("No response stream")
+        }
 
-        append({
-          role: "assistant",
-          content: JSON.stringify({ command: "bulk_execute_result", data }),
-        })
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split("\n")
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.stage) {
+                  // Update UI with new stage
+                  if (data.stage.type === "executing") {
+                    setProgress(data.stage.progress)
+                  } else if (data.stage.type === "complete" || data.stage.type === "error") {
+                    // Let the parent component know execution is complete
+                    append({
+                      role: "assistant",
+                      content: JSON.stringify({ 
+                        type: "tool",
+                        toolInvocation: {
+                          ...toolData.toolInvocation,
+                          state: "result",
+                          result: {
+                            content: [{
+                              type: "text",
+                              text: JSON.stringify({ stage: data.stage })
+                            }]
+                          }
+                        }
+                      }),
+                    })
+                    setIsExecuting(false)
+                    break
+                  }
+                }
+              } catch (e) {
+                console.error("Failed to parse SSE data:", e)
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error("Bulk execution error", error)
+        const errorStage = {
+          type: "error",
+          toolName: "bulk_process",
+          timestamp: new Date().toISOString(),
+          error: error instanceof Error ? error.message : "Unknown error",
+          canRetry: true,
+        }
         append({
           role: "assistant",
-          content: "Bulk execution failed. Please try again later.",
+          content: JSON.stringify({ 
+            type: "tool",
+            toolInvocation: {
+              ...toolData.toolInvocation,
+              state: "result",
+              result: {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify({ stage: errorStage })
+                }]
+              }
+            }
+          }),
         })
       } finally {
         setIsExecuting(false)
       }
     },
-    [append, planMetadata]
+    [append, planMetadata, toolData]
   )
 
   const handleRefine = useCallback(() => {
