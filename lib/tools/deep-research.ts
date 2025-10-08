@@ -1,10 +1,6 @@
 import { tool } from "ai"
 import { z } from "zod"
-import {
-  GoogleGenerativeAI,
-  type GenerateContentResult,
-  type GenerativeModel,
-} from "@google/generative-ai"
+import type { GenerativeModel } from "@google/generative-ai"
 
 const GEMINI_MODEL_RESEARCH = "models/gemini-2.5-pro"
 const GEMINI_MODEL_RELEVANCE = "models/gemini-2.5-flash"
@@ -143,6 +139,7 @@ Ideal for competitive intelligence, market analysis, and multi-part strategic re
       }
 
       try {
+        const { GoogleGenerativeAI } = await import("@google/generative-ai")
         const client = new GoogleGenerativeAI(geminiApiKey)
         const researchModel = client.getGenerativeModel({
           model: GEMINI_MODEL_RESEARCH,
