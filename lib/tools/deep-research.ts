@@ -1,6 +1,12 @@
 import { tool } from "ai"
 import { z } from "zod"
-import type { GenerativeModel } from "@google/generative-ai"
+import {
+  GoogleGenerativeAI,
+  type GenerateContentRequest,
+  type GenerativeModel,
+  type GoogleSearchRetrievalTool,
+  DynamicRetrievalMode,
+} from "@google/generative-ai"
 
 const GEMINI_MODEL_RESEARCH = "models/gemini-2.5-pro"
 const GEMINI_MODEL_RELEVANCE = "models/gemini-2.5-flash"
@@ -74,6 +80,8 @@ type GenerateContentEnvelope = {
   response?: GenerativeResponse
 }
 
+type ContentMessage = GenerateContentRequest["contents"][number]
+
 const POSITIVE_DOMAIN_HINTS = [
   "gov",
   ".edu",
@@ -139,7 +147,6 @@ Ideal for competitive intelligence, market analysis, and multi-part strategic re
       }
 
       try {
-        const { GoogleGenerativeAI } = await import("@google/generative-ai")
         const client = new GoogleGenerativeAI(geminiApiKey)
         const researchModel = client.getGenerativeModel({
           model: GEMINI_MODEL_RESEARCH,
@@ -151,16 +158,9 @@ Ideal for competitive intelligence, market analysis, and multi-part strategic re
         const prompt = buildResearchPrompt(question, context)
         const contents = buildContents(prompt, conversation)
 
-        const response = await researchModel.generateContent({
-          contents,
-          tools: [{ googleSearch: {} }, { urlContext: {} }],
-          generationConfig: {
-            temperature: 0.2,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-          },
-        })
+        const response = await researchModel.generateContent(
+          createGroundedRequest(contents)
+        )
 
         const envelope = response as GenerateContentEnvelope
         const answer = extractAnswerText(envelope)
@@ -208,8 +208,8 @@ Ideal for competitive intelligence, market analysis, and multi-part strategic re
 function buildContents(
   prompt: string,
   conversation?: ConversationMessage[]
-) {
-  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
+): ContentMessage[] {
+  const contents: ContentMessage[] = []
 
   if (conversation?.length) {
     for (const message of conversation.slice(-6)) {
@@ -293,6 +293,29 @@ function extractUsageMetadata(
   candidate: CandidateWithMetadata | undefined
 ): UsageMetadata {
   return candidate?.usageMetadata ?? response?.usageMetadata ?? null
+}
+
+function createGroundedRequest(contents: ContentMessage[]): GenerateContentRequest {
+  return {
+    contents,
+    tools: [createGoogleSearchTool()],
+    generationConfig: {
+      temperature: 0.2,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+    },
+  }
+}
+
+function createGoogleSearchTool(): GoogleSearchRetrievalTool {
+  return {
+    googleSearchRetrieval: {
+      dynamicRetrievalConfig: {
+        mode: DynamicRetrievalMode.MODE_DYNAMIC,
+      },
+    },
+  }
 }
 
 function extractCitations(grounding: GroundingMetadata): Citation[] {

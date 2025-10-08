@@ -3,7 +3,6 @@ import { SupabaseClient } from "@supabase/supabase-js"
 import { Database } from "@/app/types/database.types"
 import { getAllModels } from "@/lib/models"
 import { trackTokenUsage } from "@/lib/tools/token-tracking"
-import { webSearchTool } from "@/lib/tools/web-search"
 import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
 import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
 
@@ -46,7 +45,6 @@ export async function executeScheduledPrompt(
 
     // Build tools (same as chat)
     const tools: any = {
-      web_search: webSearchTool,
       gtm_expert: createGtmExpertTool(supabase, prompt.user_id),
       analyze_website: createAnalyzeWebsiteTool(supabase, prompt.user_id),
     }

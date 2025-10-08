@@ -11,10 +11,10 @@ import {
   validateAndTrackUsage,
 } from "./api"
 import { createErrorResponse, extractErrorMessage } from "./utils"
-import { webSearchTool } from "@/lib/tools/web-search"
 import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
 import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
 import { createBulkProcessTool } from "@/lib/tools/bulk-process-tool"
+import { createDeepResearchTool } from "@/lib/tools/deep-research"
 import { trackTokenUsage } from "@/lib/tools/token-tracking"
 
 export const maxDuration = 60
@@ -99,19 +99,13 @@ export async function POST(req: Request) {
     const tools: ToolSet = {}
 
     if (enableSearch && supabase && userId) {
-      // Add web search tool
-      tools.web_search = webSearchTool
-
-      // Add GTM Expert tool
       tools.gtm_expert = createGtmExpertTool(supabase, userId)
-
-      // Add website analysis tool
       tools.analyze_website = createAnalyzeWebsiteTool(supabase, userId)
+      tools.deep_research = createDeepResearchTool()
 
       if (FEATURE_FLAGS.HEAVY_TOOLS) {
         tools.bulk_process = createBulkProcessTool(supabase, userId)
       }
-
     }
 
     const result = streamText({
