@@ -4,7 +4,7 @@ import type { ToolSet } from "ai"
 import type { Database } from "../../app/types/database.types"
 import { SYSTEM_PROMPT_DEFAULT } from "../../lib/config"
 import { createClient as createSupabaseClient } from "../../lib/supabase/server"
-import { buildAgentToolsV5 } from "./tools"
+import { buildAgentToolsV5 } from "./agentic-data-integrations-tools"
 
 export type BuildAgentToolsOptions = {
   supabase?: SupabaseClient<Database> | null

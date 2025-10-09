@@ -17,7 +17,7 @@ Drop-in utilities for giving the `zola-aisdkv5` repo the same agent/tool stack w
   - Drop-in BigQuery client guard + helpers (optional)
 - `chat/agentic`
   - Shared agent context + tool builder built specifically for v5 imports
-- `agentic/`
-  - Exposes `agent-context`, `tools`, and BigQuery helpers ready for aisdkv5
+- `agentic-data-integrations/`
+  - Exposes agent context, tool builders, and BigQuery helpers ready for aisdkv5
 
 All TypeScript imports use relative paths into the v4 repo (`
