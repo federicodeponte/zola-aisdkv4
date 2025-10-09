@@ -110,12 +110,12 @@ export function Chat() {
     stop,
     hasSentFirstMessageRef,
     isSubmitting,
-    enableSearch,
-    setEnableSearch,
     submit,
     handleSuggestion,
     handleReload,
     handleInputChange,
+    pendingQueueJobs,
+    handleCancelQueuedJob,
   } = useChatCore({
     initialMessages,
     draftValue,
@@ -143,6 +143,8 @@ export function Chat() {
       onEdit: handleEdit,
       onReload: handleReload,
       onQuote: handleQuotedSelected,
+      pendingQueueJobs,
+      onCancelQueuedJob: handleCancelQueuedJob,
     }),
     [
       messages,
@@ -151,6 +153,8 @@ export function Chat() {
       handleEdit,
       handleReload,
       handleQuotedSelected,
+      pendingQueueJobs,
+      handleCancelQueuedJob,
     ]
   )
 
@@ -172,8 +176,6 @@ export function Chat() {
       isUserAuthenticated: isAuthenticated,
       stop,
       status,
-      setEnableSearch,
-      enableSearch,
       quotedText,
     }),
     [
@@ -193,8 +195,6 @@ export function Chat() {
       isAuthenticated,
       stop,
       status,
-      setEnableSearch,
-      enableSearch,
       quotedText,
     ]
   )

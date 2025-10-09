@@ -3,7 +3,12 @@ import { toast } from "@/components/ui/toast"
 import { getOrCreateGuestUserId } from "@/lib/api"
 import { MESSAGE_MAX_LENGTH, SYSTEM_PROMPT_DEFAULT } from "@/lib/config"
 import { Attachment } from "@/lib/file-handling"
-import { API_ROUTE_CHAT } from "@/lib/routes"
+import {
+  API_ROUTE_CHAT,
+  API_ROUTE_PROMPT_QUEUE_CANCEL,
+  API_ROUTE_PROMPT_QUEUE_ENQUEUE,
+  API_ROUTE_PROMPT_QUEUE_STATUS,
+} from "@/lib/routes"
 import type { UserProfile } from "@/lib/user/types"
 import type { Message } from "@ai-sdk/react"
 import { useChat } from "@ai-sdk/react"
@@ -33,6 +38,47 @@ type UseChatCoreProps = {
   bumpChat: (chatId: string) => void
 }
 
+const QUEUE_STATUS_POLL_INTERVAL = 1500
+const MAX_QUEUE_POLL_FAILURES = 5
+
+interface QueueStatusResponse {
+  success: boolean
+  queue: Array<{
+    id: string
+    status: "pending" | "processing" | "completed" | "failed" | "cancelled"
+  }>
+  error?: string
+}
+
+export interface PendingQueueMessage {
+  clientId: string
+  queueId?: string
+  status: "pending" | "processing"
+  content: string
+  createdAt: Date
+  optimisticAttachments?: ReturnType<UseChatCoreProps["createOptimisticAttachments"]>
+}
+
+async function postJson<TResponse>(url: string, body: unknown, init?: RequestInit) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+    body: JSON.stringify(body),
+    ...init,
+  })
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    const message = payload?.error || payload?.message || "Request failed"
+    throw new Error(message)
+  }
+
+  return (await response.json()) as TResponse
+}
+
 export function useChatCore({
   initialMessages,
   draftValue,
@@ -53,7 +99,22 @@ export function useChatCore({
   // State management
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasDialogAuth, setHasDialogAuth] = useState(false)
-  const [enableSearch, setEnableSearch] = useState(false)
+  const enableSearch = true
+  const [pendingQueueJobs, setPendingQueueJobs] = useState<PendingQueueMessage[]>([])
+  const pendingQueueJobsRef = useRef<PendingQueueMessage[]>([])
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pollFailureCountRef = useRef(0)
+
+  const updatePendingQueueJobs = useCallback(
+    (updater: (prev: PendingQueueMessage[]) => PendingQueueMessage[]) => {
+      setPendingQueueJobs((prev) => {
+        const next = updater(prev)
+        pendingQueueJobsRef.current = next
+        return next
+      })
+    },
+    [],
+  )
 
   // Refs and derived state
   const hasSentFirstMessageRef = useRef(false)
@@ -112,14 +173,31 @@ export function useChatCore({
   }, [prompt, setInput])
 
   // Reset messages when navigating from a chat to home
-  if (
-    prevChatIdRef.current !== null &&
-    chatId === null &&
-    messages.length > 0
-  ) {
-    setMessages([])
+  useEffect(() => {
+    if (
+      prevChatIdRef.current !== null &&
+      chatId === null &&
+      messages.length > 0
+    ) {
+      setMessages([])
+    }
+
+    prevChatIdRef.current = chatId
+  }, [chatId, messages.length, setMessages])
+
+  const clearPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    pollFailureCountRef.current = 0
   }
-  prevChatIdRef.current = chatId
+
+  useEffect(() => {
+    if (!pendingQueueJobs.length) {
+      clearPolling()
+    }
+  }, [pendingQueueJobs.length])
 
   // Submit action
   const submit = useCallback(async () => {
@@ -132,19 +210,26 @@ export function useChatCore({
     }
 
     const optimisticId = `optimistic-${Date.now().toString()}`
-    const optimisticAttachments =
-      files.length > 0 ? createOptimisticAttachments(files) : []
+    const optimisticAttachments = files.length > 0 ? createOptimisticAttachments(files) : []
 
-    const optimisticMessage = {
+    const optimisticMessage: Message = {
       id: optimisticId,
       content: input,
-      role: "user" as const,
+      role: "user",
       createdAt: new Date(),
       experimental_attachments:
         optimisticAttachments.length > 0 ? optimisticAttachments : undefined,
     }
 
     setMessages((prev) => [...prev, optimisticMessage])
+    const queueMessage: PendingQueueMessage = {
+      clientId: optimisticId,
+      status: "pending",
+      content: input,
+      createdAt: new Date(),
+      optimisticAttachments,
+    }
+    updatePendingQueueJobs((prev) => [...prev, queueMessage])
     setInput("")
 
     const submittedFiles = [...files]
@@ -155,6 +240,7 @@ export function useChatCore({
       if (!allowed) {
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
         cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
+        updatePendingQueueJobs((prev) => prev.filter((item) => item.clientId !== optimisticId))
         return
       }
 
@@ -162,6 +248,7 @@ export function useChatCore({
       if (!currentChatId) {
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
         cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
+        updatePendingQueueJobs((prev) => prev.filter((item) => item.clientId !== optimisticId))
         return
       }
 
@@ -170,8 +257,9 @@ export function useChatCore({
           title: `The message you submitted was too long, please submit something shorter. (Max ${MESSAGE_MAX_LENGTH} characters)`,
           status: "error",
         })
-        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
-        cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
+      cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
+      updatePendingQueueJobs((prev) => prev.filter((item) => item.clientId !== optimisticId))
         return
       }
 
@@ -180,26 +268,122 @@ export function useChatCore({
         attachments = await handleFileUploads(uid, currentChatId)
         if (attachments === null) {
           setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
-          cleanupOptimisticAttachments(
-            optimisticMessage.experimental_attachments
-          )
+          cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
+          updatePendingQueueJobs((prev) => prev.filter((item) => item.clientId !== optimisticId))
           return
         }
       }
 
-      const options = {
-        body: {
-          chatId: currentChatId,
-          userId: uid,
-          model: selectedModel,
-          isAuthenticated,
-          systemPrompt: systemPrompt || SYSTEM_PROMPT_DEFAULT,
-          enableSearch,
-        },
-        experimental_attachments: attachments || undefined,
+      const enqueueResponse = await postJson<{
+        success: boolean
+        queue?: { id: string; status: string }
+        error?: string
+      }>(API_ROUTE_PROMPT_QUEUE_ENQUEUE, {
+        userId: uid,
+        chatId: currentChatId,
+        model: selectedModel,
+        isAuthenticated,
+        systemPrompt,
+        enableSearch,
+        messages: messages.concat({
+          id: optimisticId,
+          role: "user",
+          content: input,
+        }),
+        attachments,
+      })
+
+      if (!enqueueResponse.success || !enqueueResponse.queue?.id) {
+        throw new Error(enqueueResponse.error || "Failed to enqueue prompt")
       }
 
-      handleSubmit(undefined, options)
+      updatePendingQueueJobs((prev) =>
+        prev.map((item) =>
+          item.clientId === optimisticId
+            ? {
+                ...item,
+                queueId: enqueueResponse.queue!.id,
+                status: enqueueResponse.queue!.status === "processing" ? "processing" : "pending",
+              }
+            : item
+        )
+      )
+
+      if (!pollIntervalRef.current) {
+        pollIntervalRef.current = setInterval(async () => {
+          try {
+            const activeJobs = pendingQueueJobsRef.current
+            if (!activeJobs.length) {
+              clearPolling()
+              return
+            }
+
+            const queueIds = activeJobs
+              .map((job) => job.queueId)
+              .filter((id): id is string => typeof id === "string" && id.length > 0)
+
+            if (!queueIds.length) {
+              return
+            }
+
+            const statusResponse = await postJson<QueueStatusResponse>(API_ROUTE_PROMPT_QUEUE_STATUS, {
+              userId: uid,
+              isAuthenticated,
+              queueIds,
+            })
+
+            if (!statusResponse.success) {
+              throw new Error(statusResponse.error || "Failed to fetch queue status")
+            }
+
+            const completed = statusResponse.queue.filter((job) => job.status === "completed")
+            const failed = statusResponse.queue.filter((job) => job.status === "failed" || job.status === "cancelled")
+
+            if (completed.length || failed.length) {
+              const completedIds = new Set(completed.map((job) => job.id))
+              const failedIds = new Set(failed.map((job) => job.id))
+
+              updatePendingQueueJobs((prev) =>
+                prev.filter((job) => {
+                  if (!job.queueId) return true
+                  if (failedIds.has(job.queueId)) {
+                    toast({ title: "Queued message failed", status: "error" })
+                    return false
+                  }
+                  if (completedIds.has(job.queueId)) {
+                    return false
+                  }
+                  return true
+                })
+              )
+
+              if (completed.length) {
+                reload({
+                  body: {
+                    chatId: currentChatId,
+                    userId: uid,
+                    model: selectedModel,
+                    isAuthenticated,
+                    systemPrompt,
+                  },
+                })
+              }
+            }
+          } catch (error) {
+            pollFailureCountRef.current += 1
+            console.error("Failed to poll queue status", error)
+            if (pollFailureCountRef.current >= MAX_QUEUE_POLL_FAILURES) {
+              clearPolling()
+              toast({
+                title: "Queue updates paused",
+                description: "Stopped polling after repeated failures.",
+                status: "warning",
+              })
+            }
+          }
+        }, QUEUE_STATUS_POLL_INTERVAL)
+      }
+
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
       cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
       cacheAndAddMessage(optimisticMessage)
@@ -208,10 +392,12 @@ export function useChatCore({
       if (messages.length > 0) {
         bumpChat(currentChatId)
       }
-    } catch {
+    } catch (error) {
+      console.error("Failed to process queued submit", error)
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
       cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
-      toast({ title: "Failed to send message", status: "error" })
+      updatePendingQueueJobs((prev) => prev.filter((item) => item.clientId !== optimisticId))
+      toast({ title: "Failed to queue message", status: "error" })
     } finally {
       setIsSubmitting(false)
     }
@@ -231,13 +417,14 @@ export function useChatCore({
     isAuthenticated,
     systemPrompt,
     enableSearch,
-    handleSubmit,
     cacheAndAddMessage,
     clearDraft,
-    messages.length,
+    messages,
     bumpChat,
-    setIsSubmitting,
+    reload,
   ])
+
+  useEffect(() => () => clearPolling(), [])
 
   // Handle suggestion
   const handleSuggestion = useCallback(
@@ -341,6 +528,22 @@ export function useChatCore({
     [setInput, setDraftValue]
   )
 
+  const handleCancelQueuedJob = useCallback(
+    async (queueId: string) => {
+    updatePendingQueueJobs((prev) => prev.filter((job) => job.queueId !== queueId))
+
+    try {
+      await postJson<{ success: boolean; error?: string }>(API_ROUTE_PROMPT_QUEUE_CANCEL, {
+        queueId,
+        userId: user?.id,
+        isAuthenticated,
+      })
+    } catch (error) {
+        console.error("Failed to cancel queue job", error)
+        toast({ title: "Failed to cancel job", status: "error" })
+      }
+    }, [isAuthenticated, user?.id])
+
   return {
     // Chat state
     messages,
@@ -363,12 +566,13 @@ export function useChatCore({
     hasDialogAuth,
     setHasDialogAuth,
     enableSearch,
-    setEnableSearch,
+    pendingQueueJobs,
 
     // Actions
     submit,
     handleSuggestion,
     handleReload,
     handleInputChange,
+    handleCancelQueuedJob,
   }
 }

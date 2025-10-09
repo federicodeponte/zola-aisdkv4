@@ -90,7 +90,7 @@ curl -X POST http://localhost:3000/api/bulk-process \
     "action": "plan",
     "csvString": "company_name,website\nStripe,stripe.com\nHubSpot,hubspot.com",
     "promptTemplate": "Analyze {{company_name}} and rate their GTM maturity (1-10)",
-    "model": "gemini-2.0-flash-001"
+    "model": "gemini-2.5-flash"
   }'
 ```
 

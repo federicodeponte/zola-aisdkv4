@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+
 import {
   parseCSV,
   generateExecutionPlan,
@@ -7,6 +7,7 @@ import {
   resultsToCSV,
   CsvRow,
 } from "@/lib/bulk-processing/processor"
+import { validateUserIdentity } from "@/lib/server/api"
 import { getEffectiveApiKey } from "@/lib/user-keys"
 import { getProviderForModel } from "@/lib/openproviders/provider-map"
 import type { ProviderWithoutOllama } from "@/lib/user-keys"
@@ -16,24 +17,18 @@ export const maxDuration = 300 // 5 minutes for bulk processing
 // POST /api/bulk-process - Generate execution plan
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Supabase is not configured" },
-        { status: 500 }
-      )
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const body = await req.json()
-    const { action, csvData, csvString, promptTemplate, model, chatId, mode } = body
+    const {
+      action,
+      csvData,
+      csvString,
+      promptTemplate,
+      model,
+      chatId,
+      mode,
+      userId,
+      isAuthenticated,
+    } = body
 
     // Parse CSV if string provided
     let parsedData: CsvRow[] = csvData
@@ -50,6 +45,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!parsedData && body.csvUrl) {
+      try {
+        const response = await fetch(body.csvUrl)
+        if (!response.ok) {
+          throw new Error(`Failed to download CSV (${response.status})`)
+        }
+        const csvText = await response.text()
+        parsedData = parseCSV(csvText)
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to download CSV"
+        return NextResponse.json(
+          { error: message },
+          { status: 400 }
+        )
+      }
+    }
+
     if (!parsedData || parsedData.length === 0) {
       return NextResponse.json({ error: "No CSV data provided" }, { status: 400 })
     }
@@ -60,6 +73,25 @@ export async function POST(req: NextRequest) {
 
     if (!model) {
       return NextResponse.json({ error: "Model selection required" }, { status: 400 })
+    }
+
+    const supabase = await validateUserIdentity(
+      userId,
+      Boolean(isAuthenticated),
+      req
+    )
+
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase is not configured" },
+        { status: 500 }
+      )
+    }
+
+    const effectiveUserId = userId ?? (await supabase.auth.getUser()).data.user?.id
+
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Action: plan - Generate execution plan
@@ -81,14 +113,14 @@ export async function POST(req: NextRequest) {
       // Get user's API key if they have one
       const provider = getProviderForModel(model)
       const apiKey =
-        (await getEffectiveApiKey(user.id, provider as ProviderWithoutOllama)) || undefined
+        (await getEffectiveApiKey(effectiveUserId, provider as ProviderWithoutOllama)) || undefined
 
       // Process the CSV
       const result = await processBulkCSV({
         csvData: parsedData,
         promptTemplate,
         model,
-        userId: user.id,
+        userId: effectiveUserId,
         chatId,
         supabase,
         apiKey,

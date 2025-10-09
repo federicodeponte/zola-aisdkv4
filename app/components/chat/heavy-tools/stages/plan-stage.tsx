@@ -72,7 +72,12 @@ export function PlanStage({ stage, onExecute, onRefine, isExecuting = false }: P
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={onRefine} disabled={isExecuting}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefine}
+          disabled={isExecuting}
+        >
           Refine Plan
         </Button>
         <Button
@@ -83,8 +88,13 @@ export function PlanStage({ stage, onExecute, onRefine, isExecuting = false }: P
         >
           Run Sample (3 rows)
         </Button>
-        <Button size="sm" onClick={() => onExecute("full")} disabled={isExecuting}>
-          {isExecuting ? "Running..." : "Run Full"} ({stage.estimates.rowsToProcess} rows)
+        <Button
+          size="sm"
+          onClick={() => onExecute("full")}
+          disabled={isExecuting}
+        >
+          {isExecuting ? "Running..." : "Run Full"} (
+          {stage.estimates.rowsToProcess} rows)
         </Button>
       </div>
       {isExecuting && (

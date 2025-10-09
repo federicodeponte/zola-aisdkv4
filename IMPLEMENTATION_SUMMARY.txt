@@ -189,7 +189,7 @@ DEEP RESEARCH (requires Exa API key + Search ON):
 BULK PROCESSING (API):
   curl -X POST http://localhost:3000/api/bulk-process \
     -H "Content-Type: application/json" \
-    -d '{"action":"plan","csvString":"company,website\nStripe,stripe.com","promptTemplate":"Analyze {{company}}","model":"gemini-2.0-flash-001"}'
+    -d '{"action":"plan","csvString":"company,website\nStripe,stripe.com","promptTemplate":"Analyze {{company}}","model":"gemini-2.5-flash"}'
 
 ================================================================================
                           COST ESTIMATES

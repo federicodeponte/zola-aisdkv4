@@ -6,6 +6,8 @@ import { Loader } from "@/components/prompt-kit/loader"
 import { ScrollButton } from "@/components/prompt-kit/scroll-button"
 import { Message as MessageType } from "@ai-sdk/react"
 import { useRef } from "react"
+
+import type { PendingQueueMessage } from "./use-chat-core"
 import { Message } from "./message"
 
 type ConversationProps = {
@@ -15,6 +17,8 @@ type ConversationProps = {
   onEdit: (id: string, newText: string) => void
   onReload: () => void
   onQuote?: (text: string, messageId: string) => void
+  pendingQueueJobs: PendingQueueMessage[]
+  onCancelQueuedJob: (queueId: string) => void
 }
 
 export function Conversation({
@@ -24,6 +28,8 @@ export function Conversation({
   onEdit,
   onReload,
   onQuote,
+  pendingQueueJobs,
+  onCancelQueuedJob,
 }: ConversationProps) {
   const initialMessageCount = useRef(messages.length)
 
@@ -64,6 +70,8 @@ export function Conversation({
                 parts={message.parts}
                 status={status}
                 onQuote={onQuote}
+                pendingQueueJobs={pendingQueueJobs}
+                onCancelQueuedJob={onCancelQueuedJob}
               >
                 {message.content}
               </Message>

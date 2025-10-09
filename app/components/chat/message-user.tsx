@@ -1,14 +1,6 @@
 "use client"
 
 import {
-  MorphingDialog,
-  MorphingDialogClose,
-  MorphingDialogContainer,
-  MorphingDialogContent,
-  MorphingDialogImage,
-  MorphingDialogTrigger,
-} from "@/components/motion-primitives/morphing-dialog"
-import {
   MessageAction,
   MessageActions,
   Message as MessageContainer,
@@ -17,14 +9,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Message as MessageType } from "@ai-sdk/react"
-import { Check, Copy, Trash } from "@phosphor-icons/react"
-import Image from "next/image"
-import { useRef, useState } from "react"
+import { Check, Copy, Trash, XCircle } from "@phosphor-icons/react"
+import { useMemo, useRef, useState } from "react"
 
-const getTextFromDataUrl = (dataUrl: string) => {
-  const base64 = dataUrl.split(",")[1]
-  return base64
-}
+import { AttachmentPreviewList } from "./attachment-preview"
+import type { PendingQueueMessage } from "./use-chat-core"
 
 export type MessageUserProps = {
   hasScrollAnchor?: boolean
@@ -37,6 +26,8 @@ export type MessageUserProps = {
   onDelete: (id: string) => void
   id: string
   className?: string
+  pendingQueueJobs: PendingQueueMessage[]
+  onCancelQueuedJob: (queueId: string) => void
 }
 
 export function MessageUser({
@@ -50,10 +41,17 @@ export function MessageUser({
   onDelete,
   id,
   className,
+  pendingQueueJobs,
+  onCancelQueuedJob,
 }: MessageUserProps) {
   const [editInput, setEditInput] = useState(children)
   const [isEditing, setIsEditing] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+
+  const queueEntry = useMemo(
+    () => pendingQueueJobs.find((job) => job.clientId === id),
+    [pendingQueueJobs, id]
+  )
 
   const handleEditCancel = () => {
     setIsEditing(false)
@@ -80,48 +78,33 @@ export function MessageUser({
         className
       )}
     >
-      {attachments?.map((attachment, index) => (
-        <div
-          className="flex flex-row gap-2"
-          key={`${attachment.name}-${index}`}
-        >
-          {attachment.contentType?.startsWith("image") ? (
-            <MorphingDialog
-              transition={{
-                type: "spring",
-                stiffness: 280,
-                damping: 18,
-                mass: 0.3,
-              }}
+      {queueEntry && (
+        <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium",
+              queueEntry.status === "processing"
+                ? "bg-amber-500/10 text-amber-600"
+                : "bg-blue-500/10 text-blue-500"
+            )}
+          >
+            <span className="inline-block size-2 rounded-full bg-current" />
+            {queueEntry.status === "processing" ? "Processing" : "Queued"}
+          </span>
+          {queueEntry.queueId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onCancelQueuedJob(queueEntry.queueId!)}
+              className="h-6 px-2 text-xs"
             >
-              <MorphingDialogTrigger className="z-10">
-                <Image
-                  className="mb-1 w-40 rounded-md"
-                  key={attachment.name}
-                  src={attachment.url}
-                  alt={attachment.name || "Attachment"}
-                  width={160}
-                  height={120}
-                />
-              </MorphingDialogTrigger>
-              <MorphingDialogContainer>
-                <MorphingDialogContent className="relative rounded-lg">
-                  <MorphingDialogImage
-                    src={attachment.url}
-                    alt={attachment.name || ""}
-                    className="max-h-[90vh] max-w-[90vw] object-contain"
-                  />
-                </MorphingDialogContent>
-                <MorphingDialogClose className="text-primary" />
-              </MorphingDialogContainer>
-            </MorphingDialog>
-          ) : attachment.contentType?.startsWith("text") ? (
-            <div className="text-primary mb-3 h-24 w-40 overflow-hidden rounded-md border p-2 text-xs">
-              {getTextFromDataUrl(attachment.url)}
-            </div>
-          ) : null}
+              <XCircle className="mr-1 size-3.5" />
+              Cancel
+            </Button>
+          )}
         </div>
-      ))}
+      )}
+      <AttachmentPreviewList attachments={attachments} />
       {isEditing ? (
         <div
           className="bg-accent relative flex min-w-[180px] flex-col gap-2 rounded-3xl px-5 py-2.5"

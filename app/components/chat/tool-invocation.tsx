@@ -1,9 +1,10 @@
 "use client"
 
 import { FEATURE_FLAGS } from "@/lib/config"
-import { HeavyToolRenderer } from "./heavy-tools/heavy-tool-renderer"
 import { cn } from "@/lib/utils"
 import type { ToolInvocationUIPart } from "@ai-sdk/ui-utils"
+import { ToolLoadingBar } from "./tool-loading-bar"
+import { mapStageToLoadingBarProps } from "./heavy-tools/bulk-process/utils"
 import {
   CaretDown,
   CheckCircle,
@@ -12,31 +13,34 @@ import {
   Nut,
   Spinner,
   Wrench,
-} from "@phosphor-icons/react"
-import { AnimatePresence, motion } from "framer-motion"
-import { useMemo, useState } from "react"
+} from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useMemo, useState } from "react";
+
+const isLoadingCardEnabled =
+  process.env.NEXT_PUBLIC_TOOL_LOADING_CARD === "true" || FEATURE_FLAGS.HEAVY_TOOLS;
 
 interface ToolInvocationProps {
-  toolInvocations: ToolInvocationUIPart[]
-  className?: string
-  defaultOpen?: boolean
+  toolInvocations: ToolInvocationUIPart[];
+  className?: string;
+  defaultOpen?: boolean;
 }
 
 const TRANSITION = {
   type: "spring",
   duration: 0.2,
   bounce: 0,
-}
+};
 
 export function ToolInvocation({
   toolInvocations,
   defaultOpen = false,
 }: ToolInvocationProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultOpen)
+  const [isExpanded, setIsExpanded] = useState(defaultOpen);
 
   const toolInvocationsData = Array.isArray(toolInvocations)
     ? toolInvocations
-    : [toolInvocations]
+    : [toolInvocations];
 
   // Group tool invocations by toolCallId
   const groupedTools = toolInvocationsData.reduce(
@@ -199,6 +203,7 @@ function SingleToolView({
 }
 
 // New component to handle individual tool cards
+
 function SingleToolCard({
   toolData,
   defaultOpen = false,
@@ -208,11 +213,11 @@ function SingleToolCard({
   defaultOpen?: boolean
   className?: string
 }) {
-  if (
-    FEATURE_FLAGS.HEAVY_TOOLS &&
-    toolData.toolInvocation.toolName === "bulk_process"
-  ) {
-    return <HeavyToolRenderer toolData={toolData} />
+  const loadingBarEnabled = process.env.NEXT_PUBLIC_TOOL_LOADING_CARD !== "false"
+  const stageProps = loadingBarEnabled ? mapStageToLoadingBarProps(toolData) : null
+
+  if (stageProps) {
+    return <ToolLoadingBar {...stageProps} />
   }
 
   const [isExpanded, setIsExpanded] = useState(defaultOpen)

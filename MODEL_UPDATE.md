@@ -3,21 +3,21 @@
 ## Changed Default Model
 
 **From**: Gemini 2.0 Flash (`gemini-2.0-flash-001`)
-**To**: Gemini 2.5 Flash Preview (`gemini-2.5-pro-exp-03-25`)
+**To**: Gemini 2.5 Flash (`gemini-2.5-flash`)
 
 ## What Changed
 
 ### 1. Default Model Configuration
 - **File**: `lib/config.ts`
-- **New Default**: `MODEL_DEFAULT = "gemini-2.5-pro-exp-03-25"`
+- **New Default**: `MODEL_DEFAULT = "gemini-2.5-flash"`
 - **Non-Auth Allowed**: Updated to allow 2.5 Flash for non-authenticated users
 
 ### 2. Model Specifications (Gemini 2.5 Flash)
 - **Context Window**: 1M tokens
-- **Input Cost**: $0.10 per 1M tokens
-- **Output Cost**: $0.40 per 1M tokens
+- **Input Cost**: $0.075 per 1M tokens
+- **Output Cost**: $0.30 per 1M tokens
 - **Speed**: Fast
-- **Intelligence**: Medium (with reasoning support)
+- **Intelligence**: High (reasoning enabled)
 - **Features**: Vision ✅, Tools ✅, Audio ✅, Reasoning ✅
 
 ### 3. Comparison with 2.0 Flash
@@ -25,14 +25,14 @@
 | Feature | Gemini 2.0 Flash | Gemini 2.5 Flash |
 |---------|------------------|------------------|
 | Context Window | 1M tokens | 1M tokens |
-| Input Cost | $0.075/1M | $0.10/1M (+33%) |
-| Output Cost | $0.30/1M | $0.40/1M (+33%) |
+| Input Cost | $0.075/1M | $0.075/1M (same) |
+| Output Cost | $0.30/1M | $0.30/1M (same) |
 | Reasoning | ❌ | ✅ |
 | Tools Support | ✅ | ✅ |
 | Vision | ✅ | ✅ |
 | Audio | ✅ | ✅ |
 
-**Trade-off**: Slightly higher cost (+33%) but with enhanced reasoning capabilities.
+**Trade-off**: Same pricing as 2.0 Flash with enhanced reasoning capabilities.
 
 ### 4. Updated Files
 
@@ -62,13 +62,7 @@
 
 ## Cost Impact
 
-**Estimated Usage:**
-- Simple chat: ~$0.0003 (was ~$0.0002) +50%
-- With web search: ~$0.001 (was ~$0.0008) +25%
-- Website analysis: ~$0.0015 (was ~$0.0012) +25%
-- Deep research: ~$0.005 (was ~$0.004) +25%
-
-**Still very affordable** - roughly $0.20-0.30 per 1000 messages with tool use.
+Pricing remains unchanged from Gemini 2.0 Flash, so no adjustments are required for existing token tiers. Expect the same ~$0.0002-$0.0003 per standard chat interaction.
 
 ## Token Tier Recommendations (Updated)
 
@@ -94,7 +88,7 @@ Or keep existing tiers - the cost difference is minimal for the enhanced capabil
 To test with 2.5 Flash:
 ```bash
 # Check model is available
-curl http://localhost:3002/api/models | jq '.models[] | select(.id=="gemini-2.5-pro-exp-03-25")'
+curl http://localhost:3002/api/models | jq '.models[] | select(.id=="gemini-2.5-flash")'
 
 # Test chat (after DB setup + auth)
 curl -X POST http://localhost:3002/api/chat \
@@ -104,7 +98,7 @@ curl -X POST http://localhost:3002/api/chat \
     "messages": [{"role": "user", "content": "Explain the Rule of 40"}],
     "chatId": "test-123",
     "userId": "your-user-id",
-    "model": "gemini-2.5-pro-exp-03-25",
+    "model": "gemini-2.5-flash",
     "isAuthenticated": true,
     "enableSearch": false
   }'

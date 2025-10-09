@@ -8,12 +8,10 @@ import {
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input"
 import { Button } from "@/components/ui/button"
-import { getModelInfo } from "@/lib/models"
 import { ArrowUpIcon, StopIcon } from "@phosphor-icons/react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { PromptSystem } from "../suggestions/prompt-system"
 import { ButtonFileUpload } from "./button-file-upload"
-import { ButtonSearch } from "./button-search"
 import { FileList } from "./file-list"
 
 type ChatInputProps = {
@@ -32,8 +30,6 @@ type ChatInputProps = {
   isUserAuthenticated: boolean
   stop: () => void
   status?: "submitted" | "streaming" | "ready" | "error"
-  setEnableSearch: (enabled: boolean) => void
-  enableSearch: boolean
   quotedText?: { text: string; messageId: string } | null
 }
 
@@ -52,13 +48,9 @@ export function ChatInput({
   isUserAuthenticated,
   stop,
   status,
-  setEnableSearch,
-  enableSearch,
   quotedText,
 }: ChatInputProps) {
-  const selectModelConfig = getModelInfo(selectedModel)
-  const hasSearchSupport = Boolean(selectModelConfig?.webSearch)
-  const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
+  const isOnlyWhitespace = (text: string) => !/[^ -]/.test(text)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleSend = useCallback(() => {
@@ -153,12 +145,6 @@ export function ChatInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quotedText, onValueChange])
 
-  useMemo(() => {
-    if (!hasSearchSupport && enableSearch) {
-      setEnableSearch?.(false)
-    }
-  }, [hasSearchSupport, enableSearch, setEnableSearch])
-
   return (
     <div className="relative flex w-full flex-col gap-4">
       {hasSuggestions && (
@@ -199,13 +185,6 @@ export function ChatInput({
                 isUserAuthenticated={isUserAuthenticated}
                 className="rounded-full"
               />
-              {hasSearchSupport ? (
-                <ButtonSearch
-                  isSelected={enableSearch}
-                  onToggle={setEnableSearch}
-                  isAuthenticated={isUserAuthenticated}
-                />
-              ) : null}
             </div>
             <PromptInputAction
               tooltip={status === "streaming" ? "Stop" : "Send"}

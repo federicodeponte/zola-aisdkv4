@@ -230,7 +230,7 @@ curl -X POST http://localhost:3000/api/bulk-process \
     "action": "plan",
     "csvString": "company,website\nStripe,stripe.com",
     "promptTemplate": "Analyze {{company}} at {{website}}",
-    "model": "gemini-2.0-flash-001"
+    "model": "gemini-2.5-flash"
   }'
 ```
 

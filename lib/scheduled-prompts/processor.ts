@@ -32,7 +32,7 @@ export interface ExecutePromptResult {
 export async function executeScheduledPrompt(
   supabase: SupabaseClient<Database>,
   prompt: ScheduledPrompt,
-  model = "gemini-2.0-flash-001"
+  model = "gemini-2.5-flash"
 ): Promise<ExecutePromptResult> {
   try {
     // Get model config

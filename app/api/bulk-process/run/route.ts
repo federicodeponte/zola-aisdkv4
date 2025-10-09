@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import {
   parseCSV,
   processBulkCSV,
   resultsToCSV,
 } from "@/lib/bulk-processing/processor"
+import { validateUserIdentity } from "@/lib/server/api"
 import { getEffectiveApiKey } from "@/lib/user-keys"
 import { getProviderForModel } from "@/lib/openproviders/provider-map"
 import type { ProviderWithoutOllama } from "@/lib/user-keys"
@@ -22,24 +22,27 @@ export async function POST(req: NextRequest) {
   const customReadable = new ReadableStream({
     async start(controller) {
       try {
-        const supabase = await createClient()
+        const body = await req.json()
+        const { csvString, csvUrl, promptTemplate, model, chatId, mode, userId, isAuthenticated } = body
+
+        if ((!csvString && !csvUrl) || !promptTemplate || !model || !chatId) {
+          throw new Error("Missing required parameters")
+        }
+
+        const supabase = await validateUserIdentity(
+          userId,
+          Boolean(isAuthenticated),
+          req
+        )
+
         if (!supabase) {
           throw new Error("Supabase not configured")
         }
 
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const effectiveUserId = userId ?? (await supabase.auth.getUser()).data.user?.id
 
-        if (!user) {
+        if (!effectiveUserId) {
           throw new Error("Unauthorized")
-        }
-
-        const body = await req.json()
-        const { csvString, promptTemplate, model, chatId, mode } = body
-
-        if (!csvString || !promptTemplate || !model || !chatId) {
-          throw new Error("Missing required parameters")
         }
 
         const executionId = uuidv4()
@@ -60,10 +63,21 @@ export async function POST(req: NextRequest) {
           encoder.encode(`event: stage\ndata: ${JSON.stringify({ stage: initialStage })}\n\n`)
         )
 
-        const csvData = parseCSV(csvString)
+        let csvData
+        if (csvString) {
+          csvData = parseCSV(csvString)
+        } else if (csvUrl) {
+          const response = await fetch(csvUrl)
+          if (!response.ok) {
+            throw new Error(`Failed to download CSV (${response.status})`)
+          }
+          csvData = parseCSV(await response.text())
+        } else {
+          throw new Error("No CSV data provided")
+        }
         const provider = getProviderForModel(model)
         const apiKey =
-          (await getEffectiveApiKey(user.id, provider as ProviderWithoutOllama)) || undefined
+          (await getEffectiveApiKey(effectiveUserId, provider as ProviderWithoutOllama)) || undefined
 
         // Update with total count
         const progressStage: ExecutingStage = {
@@ -81,7 +95,7 @@ export async function POST(req: NextRequest) {
           csvData,
           promptTemplate,
           model,
-          userId: user.id,
+          userId: effectiveUserId,
           chatId,
           supabase,
           apiKey,
@@ -110,7 +124,7 @@ export async function POST(req: NextRequest) {
         // Upload results to storage
         const { error: uploadError } = await supabase.storage
           .from("chat-attachments")
-          .upload(`bulk-results/${executionId}.csv`, outputCSV, {
+          .upload(`${effectiveUserId}/bulk-results/${executionId}.csv`, outputCSV, {
             contentType: "text/csv",
             upsert: true,
           })
@@ -121,7 +135,7 @@ export async function POST(req: NextRequest) {
 
         const { data: publicUrlData } = supabase.storage
           .from("chat-attachments")
-          .getPublicUrl(`bulk-results/${executionId}.csv`)
+          .getPublicUrl(`${effectiveUserId}/bulk-results/${executionId}.csv`)
 
         // Send complete stage
         const completeStage: CompleteStage = {

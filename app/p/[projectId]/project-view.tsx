@@ -34,7 +34,6 @@ type ProjectViewProps = {
 
 export function ProjectView({ projectId }: ProjectViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [enableSearch, setEnableSearch] = useState(false)
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const { user } = useUser()
   const { createNewChat, bumpChat } = useChats()
@@ -251,7 +250,6 @@ export function ProjectView({ projectId }: ProjectViewProps) {
           model: selectedModel,
           isAuthenticated: true,
           systemPrompt: SYSTEM_PROMPT_DEFAULT,
-          enableSearch,
         },
         experimental_attachments: attachments || undefined,
       }
@@ -288,7 +286,6 @@ export function ProjectView({ projectId }: ProjectViewProps) {
     cacheAndAddMessage,
     messages.length,
     bumpChat,
-    enableSearch,
   ])
 
   const handleReload = useCallback(async () => {
@@ -346,8 +343,6 @@ export function ProjectView({ projectId }: ProjectViewProps) {
       isUserAuthenticated: isAuthenticated,
       stop,
       status,
-      setEnableSearch,
-      enableSearch,
     }),
     [
       input,
@@ -362,8 +357,6 @@ export function ProjectView({ projectId }: ProjectViewProps) {
       isAuthenticated,
       stop,
       status,
-      setEnableSearch,
-      enableSearch,
     ]
   )
 

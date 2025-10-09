@@ -7,7 +7,7 @@ import {
   parseCSV,
   generateExecutionPlan,
 } from "@/lib/bulk-processing/processor"
-import { FEATURE_FLAGS, MODEL_DEFAULT } from "@/lib/config"
+import { MODEL_DEFAULT } from "@/lib/config"
 import type { PlanStage, ErrorStage } from "./heavy-tool/types"
 
 const ToolParamsSchema = z.object({
@@ -39,18 +39,6 @@ export const createBulkProcessTool = (
       "Generate and execute a bulk processing plan against a CSV file. Produces a plan with validation, sample prompts, and execution estimates.",
     parameters: ToolParamsSchema,
     execute: async ({ stage, csvUrl, csvContent, promptTemplate, model, mode, refinements }) => {
-      if (!FEATURE_FLAGS.HEAVY_TOOLS) {
-        const disabledStage: ErrorStage = {
-          type: "error",
-          toolName: "bulk_process",
-          timestamp: new Date().toISOString(),
-          error: "Bulk processing tools are disabled in this environment.",
-          canRetry: false,
-        }
-
-        return { stage: disabledStage }
-      }
-
       if (stage === "plan") {
         try {
           // Get CSV content either from URL or direct content

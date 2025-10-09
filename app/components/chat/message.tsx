@@ -3,6 +3,8 @@ import React, { useState } from "react"
 import { MessageAssistant } from "./message-assistant"
 import { MessageUser } from "./message-user"
 
+import type { PendingQueueMessage } from "./use-chat-core"
+
 type MessageProps = {
   variant: MessageType["role"]
   children: string
@@ -17,6 +19,8 @@ type MessageProps = {
   status?: "streaming" | "ready" | "submitted" | "error"
   className?: string
   onQuote?: (text: string, messageId: string) => void
+  pendingQueueJobs: PendingQueueMessage[]
+  onCancelQueuedJob: (queueId: string) => void
 }
 
 export function Message({
@@ -33,6 +37,8 @@ export function Message({
   status,
   className,
   onQuote,
+  pendingQueueJobs,
+  onCancelQueuedJob,
 }: MessageProps) {
   const [copied, setCopied] = useState(false)
 
@@ -54,6 +60,8 @@ export function Message({
         hasScrollAnchor={hasScrollAnchor}
         attachments={attachments}
         className={className}
+        pendingQueueJobs={pendingQueueJobs}
+        onCancelQueuedJob={onCancelQueuedJob}
       >
         {children}
       </MessageUser>

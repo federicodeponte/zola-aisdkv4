@@ -95,10 +95,10 @@ export async function POST(req: Request) {
         undefined
     }
 
-    // Build tools object - only include tools if search is enabled and user is authenticated
+    // Build tools object - include all available tools when Supabase context is present
     const tools: ToolSet = {}
 
-    if (enableSearch && supabase && userId) {
+    if (supabase && userId) {
       tools.gtm_expert = createGtmExpertTool(supabase, userId)
       tools.analyze_website = createAnalyzeWebsiteTool(supabase, userId)
       tools.deep_research = createDeepResearchTool()
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
     }
 
     const result = streamText({
-      model: modelConfig.apiSdk(apiKey, { enableSearch }),
+      model: modelConfig.apiSdk(apiKey, { enableSearch: true }),
       system: effectiveSystemPrompt,
       messages: messages,
       tools,

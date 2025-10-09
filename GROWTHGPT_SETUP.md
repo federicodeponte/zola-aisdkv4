@@ -130,11 +130,11 @@ WEB_SEARCH_LIMITS = {
 
 ### Default Model
 
-Currently set to: `gemini-2.0-flash-001`
+Currently set to: `gemini-2.5-flash`
 
 Change in `lib/config.ts`:
 ```typescript
-export const MODEL_DEFAULT = "gemini-2.0-flash-001"
+export const MODEL_DEFAULT = "gemini-2.5-flash"
 ```
 
 ### System Prompt

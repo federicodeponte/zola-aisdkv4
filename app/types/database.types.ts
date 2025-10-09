@@ -194,6 +194,88 @@ export type Database = {
           },
         ]
       }
+      connectors: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          status: string
+          last_synced_at: string | null
+          created_at: string | null
+          updated_at: string | null
+          masked_identifier: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          status?: string
+          last_synced_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          masked_identifier?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          provider?: string
+          status?: string
+          last_synced_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          masked_identifier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connectors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_datasets: {
+        Row: {
+          id: string
+          user_id: string
+          tenant_id: string
+          dataset_id: string
+          project_id: string
+          location: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          tenant_id: string
+          dataset_id: string
+          project_id: string
+          location: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          tenant_id?: string
+          dataset_id?: string
+          project_id?: string
+          location?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_datasets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_attachments: {
         Row: {
           chat_id: string
@@ -339,6 +421,84 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_queue: {
+        Row: {
+          id: string
+          user_id: string
+          chat_id: string
+          model: string
+          system_prompt: string | null
+          enable_search: boolean
+          is_authenticated: boolean
+          messages: Json
+          attachments: Json
+          status: string
+          priority: number
+          attempt_count: number
+          error: Json | null
+          metadata: Json
+          message_group_id: string | null
+          created_at: string
+          started_at: string | null
+          finished_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          chat_id: string
+          model: string
+          system_prompt?: string | null
+          enable_search?: boolean
+          is_authenticated?: boolean
+          messages: Json
+          attachments?: Json
+          status?: string
+          priority?: number
+          attempt_count?: number
+          error?: Json | null
+          metadata?: Json
+          message_group_id?: string | null
+          created_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          chat_id?: string
+          model?: string
+          system_prompt?: string | null
+          enable_search?: boolean
+          is_authenticated?: boolean
+          messages?: Json
+          attachments?: Json
+          status?: string
+          priority?: number
+          attempt_count?: number
+          error?: Json | null
+          metadata?: Json
+          message_group_id?: string | null
+          created_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_queue_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
             referencedColumns: ["id"]
           },
         ]
@@ -516,7 +676,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      prompt_queue_acquire: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          user_id: string
+          chat_id: string
+          model: string
+          system_prompt: string | null
+          enable_search: boolean
+          is_authenticated: boolean
+          messages: Json
+          attachments: Json
+          attempt_count: number
+          metadata: Json
+          message_group_id: string | null
+        }[]
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: {

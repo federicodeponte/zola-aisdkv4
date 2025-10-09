@@ -9,7 +9,7 @@
 
 ### ✅ Model Configuration
 - **Gemini 2.0 Flash**: ✅ Available and configured
-  - ID: `gemini-2.0-flash-001`
+  - ID: `gemini-2.5-flash`
   - Provider: Google
   - Context Window: 1M tokens
   - Tools Support: YES
@@ -128,7 +128,7 @@ curl -X POST http://localhost:3000/api/chat \\
     "messages": [{"role": "user", "content": "Analyze stripe.com"}],
     "chatId": "test-123",
     "userId": "your-user-id",
-    "model": "gemini-2.0-flash-001",
+    "model": "gemini-2.5-flash",
     "isAuthenticated": true,
     "systemPrompt": "",
     "enableSearch": true
@@ -144,7 +144,7 @@ curl -X POST http://localhost:3000/api/bulk-process \\
     "action": "plan",
     "csvString": "company,website\\nStripe,stripe.com",
     "promptTemplate": "Analyze {{company}}",
-    "model": "gemini-2.0-flash-001"
+    "model": "gemini-2.5-flash"
   }'
 ```
 
@@ -168,7 +168,7 @@ curl -X POST http://localhost:3000/api/bulk-process \\
 ### ✨ Key Features Verified in Code
 
 1. **Gemini Integration** ✅
-   - Default model set to gemini-2.0-flash-001
+ - Default model set to gemini-2.5-flash
    - API key configured
    - Model available in system
 
