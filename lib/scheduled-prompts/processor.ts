@@ -2,7 +2,7 @@ import { streamText } from "ai"
 import { SupabaseClient } from "@supabase/supabase-js"
 import { Database } from "@/app/types/database.types"
 import { getAllModels } from "@/lib/models"
-import { trackTokenUsage } from "@/lib/tools/token-tracking"
+import { createTokenUsageRecorder } from "@/shared-v5-ready/token-usage"
 import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
 import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
 
@@ -73,14 +73,15 @@ export async function executeScheduledPrompt(
 
     // Track tokens
     if (usage) {
-      await trackTokenUsage(supabase, {
+      const recordUsage = createTokenUsageRecorder({
+        supabase,
         userId: prompt.user_id,
-        chatId: prompt.id, // Use prompt ID as chat ID
+        chatId: prompt.id,
         model,
-        promptTokens: usage.promptTokens,
-        completionTokens: usage.completionTokens,
         actionType: "scheduled_prompt",
       })
+
+      await recordUsage(usage)
     }
 
     return {

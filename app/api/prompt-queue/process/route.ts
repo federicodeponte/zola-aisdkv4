@@ -15,7 +15,7 @@ import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
 import { createBulkProcessTool } from "@/lib/tools/bulk-process-tool"
 import { createDeepResearchTool } from "@/lib/tools/deep-research"
 import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
-import { trackTokenUsage } from "@/lib/tools/token-tracking"
+import { createTokenUsageRecorder } from "@/shared-v5-ready/token-usage"
 
 type PromptQueueJobPayload = {
   messages: MessageAISDK[]
@@ -218,6 +218,14 @@ async function processQueueJob(
     const response = await result.response
     const usage = await result.usage
 
+    const recordUsage = createTokenUsageRecorder({
+      supabase,
+      userId: job.user_id,
+      chatId: job.chat_id,
+      model: payload.model,
+      actionType: "message",
+    })
+
     await storeAssistantMessage({
       supabase,
       chatId: job.chat_id,
@@ -226,16 +234,7 @@ async function processQueueJob(
       model: payload.model,
     })
 
-    if (usage) {
-      await trackTokenUsage(supabase, {
-        userId: job.user_id,
-        chatId: job.chat_id,
-        model: payload.model,
-        promptTokens: usage.promptTokens,
-        completionTokens: usage.completionTokens,
-        actionType: "message",
-      })
-    }
+    await recordUsage(usage)
 
     await supabase
       .from("prompt_queue")

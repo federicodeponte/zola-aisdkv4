@@ -15,7 +15,7 @@ import { createGtmExpertTool } from "@/lib/tools/gtm-expert"
 import { createAnalyzeWebsiteTool } from "@/lib/tools/analyze-website"
 import { createBulkProcessTool } from "@/lib/tools/bulk-process-tool"
 import { createDeepResearchTool } from "@/lib/tools/deep-research"
-import { trackTokenUsage } from "@/lib/tools/token-tracking"
+import { createTokenUsageRecorder } from "@/shared-v5-ready/token-usage"
 
 export const maxDuration = 60
 
@@ -121,6 +121,14 @@ export async function POST(req: Request) {
 
       onFinish: async ({ response, usage }) => {
         if (supabase) {
+          const recordUsage = createTokenUsageRecorder({
+            supabase,
+            userId,
+            chatId,
+            model,
+            actionType: "message",
+          })
+
           // Store assistant message
           await storeAssistantMessage({
             supabase,
@@ -132,16 +140,7 @@ export async function POST(req: Request) {
           })
 
           // Track token usage
-          if (usage) {
-            await trackTokenUsage(supabase, {
-              userId,
-              chatId,
-              model,
-              promptTokens: usage.promptTokens,
-              completionTokens: usage.completionTokens,
-              actionType: "message",
-            })
-          }
+          await recordUsage(usage)
         }
       },
     })

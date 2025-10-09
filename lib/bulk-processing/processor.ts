@@ -1,8 +1,7 @@
-import { streamText } from "ai"
-import { SupabaseClient } from "@supabase/supabase-js"
-import { Database } from "@/app/types/database.types"
+import type { SupabaseClientType } from "@/app/types/api.types"
 import { getAllModels } from "@/lib/models"
-import { trackTokenUsage } from "@/lib/tools/token-tracking"
+import { createTokenUsageRecorder } from "@/shared-v5-ready/token-usage"
+import { streamText } from "ai"
 
 export type CsvRow = Record<string, string>
 
@@ -12,10 +11,10 @@ export interface BulkProcessingOptions {
   model: string
   userId: string
   chatId: string
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClientType
   apiKey?: string
   onProgress?: (current: number, total: number, result: string) => void
-  mode?: "sample" | "full" // sample = first 3 rows, full = all rows
+  mode?: "sample" | "full"
 }
 
 export interface BulkProcessingResult {
@@ -147,14 +146,16 @@ export async function processBulkCSV(
       // Track tokens
       if (usage) {
         result.totalTokens += usage.totalTokens
-        await trackTokenUsage(supabase, {
+
+        const recordUsage = createTokenUsageRecorder({
+          supabase,
           userId,
           chatId,
           model,
-          promptTokens: usage.promptTokens,
-          completionTokens: usage.completionTokens,
           actionType: "bulk_process",
         })
+
+        await recordUsage(usage)
       }
 
       result.results.push({
